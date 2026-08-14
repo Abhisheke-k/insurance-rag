@@ -1,0 +1,24 @@
+# Core runtime + test dependencies.
+# Optional embedding backends live in requirements-embeddings.txt (they pull in
+# PyTorch, which is a ~2 GB install you do not need to run or test the service).
+
+# API
+fastapi>=0.115
+uvicorn[standard]>=0.30
+python-multipart>=0.0.9      # multipart/form-data uploads for POST /ingest
+
+# Configuration
+pydantic>=2.7
+pydantic-settings>=2.3
+python-dotenv>=1.0
+
+# Ingestion and storage
+pymupdf>=1.24                # PDF text extraction with per-block positions
+chromadb>=0.5                # persistent vector store
+
+# Generation
+anthropic>=0.40
+
+# Tests
+pytest>=8.0
+httpx>=0.27                  # required by fastapi.testclient

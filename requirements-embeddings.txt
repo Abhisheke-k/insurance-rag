@@ -1,0 +1,10 @@
+# Optional embedding backends. Install whichever you intend to use.
+#
+#   pip install -r requirements-embeddings.txt
+#
+# Without either of these the service still runs: it falls back to the built-in
+# hashing embedder (lexical, deterministic, no downloads). See EMBEDDING_PROVIDER
+# in .env.example and the "Embeddings" section of the README.
+
+voyageai>=0.3                 # used when VOYAGE_API_KEY is set
+sentence-transformers>=3.0    # local all-MiniLM-L6-v2; pulls in PyTorch (~2 GB)

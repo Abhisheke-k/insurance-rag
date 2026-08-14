@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Endorsement Desk</title>
+<style>
+  /* ------------------------------------------------------------------ *
+   * Design notes
+   * The product here is not the answer, it is the *defensible* answer:
+   * an ops analyst has to show an auditor where a number came from. So
+   * provenance is treated as first-class matter, not a footnote drawer.
+   *
+   * Palette comes from the subject's own world - carbon-copy forms and
+   * blue-black underwriting ink on pale duplicate paper - not from a
+   * generic dashboard theme.
+   * Type has three jobs and three voices: serif for the answer prose
+   * (it is legal reading), mono for evidence and reference numbers (it
+   * is typed form data), sans for interface chrome.
+   * ------------------------------------------------------------------ */
+  :root {
+    --ink:        #16223f;
+    --ink-soft:   #4a5670;
+    --ink-faint:  #7c8598;
+    --paper:      #e9ebef;
+    --surface:    #ffffff;
+    --surface-2:  #f5f6f8;
+    --rule:       #ccd3dd;
+    --rule-soft:  #e2e6ec;
+    --stamp:      #97302f;
+    --flag:       #9a6408;
+    --flag-bg:    #fdf3df;
+    --flag-rule:  #e5c684;
+    --verify:     #1c6350;
+    --focus:      #2f5fd0;
+
+    --serif: Charter, "Bitstream Charter", "Iowan Old Style", Georgia, "Times New Roman", serif;
+    --sans: "Segoe UI", Inter, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+    --radius: 3px;
+    --gap: 20px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink:       #e7ebf2;
+      --ink-soft:  #a9b3c6;
+      --ink-faint: #7c869a;
+      --paper:     #10141d;
+      --surface:   #171c27;
+      --surface-2: #1d2430;
+      --rule:      #2f3846;
+      --rule-soft: #242c38;
+      --stamp:     #d98b86;
+      --flag:      #e2ae5c;
+      --flag-bg:   #2b2314;
+      --flag-rule: #6b5320;
+      --verify:    #6fc3a8;
+      --focus:     #7ba2ff;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* --- masthead ---------------------------------------------------- */
+  .masthead {
+    border-bottom: 1px solid var(--rule);
+    background: var(--surface);
+    padding: 14px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px 18px;
+  }
+  .masthead h1 {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .masthead p {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 13px;
+    flex: 1 1 260px;
+  }
+  .statusbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .stat {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 3px 8px;
+    background: var(--surface-2);
+    white-space: nowrap;
+  }
+  .stat[data-state="down"] { color: var(--stamp); border-color: var(--stamp); }
+
+  /* --- layout ------------------------------------------------------ */
+  .workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.85fr);
+    gap: var(--gap);
+    align-items: start;
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: var(--gap) 24px 64px;
+  }
+  @media (max-width: 900px) {
+    .workspace { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+  }
+  .panel + .panel { margin-top: var(--gap); }
+
+  .panel > header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .panel > header h2 {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .panel > header .hint {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+  }
+  .panel-body { padding: 16px; }
+
+  /* --- enquiry form ------------------------------------------------ */
+  #ask-form { padding: 16px; }
+
+  textarea {
+    width: 100%;
+    min-height: 84px;
+    resize: vertical;
+    padding: 12px 13px;
+    font-family: var(--serif);
+    font-size: 16px;
+    line-height: 1.45;
+    color: var(--ink);
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+  }
+  textarea::placeholder { color: var(--ink-faint); font-family: var(--sans); font-size: 15px; }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .controls label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  input[type="number"] {
+    width: 60px;
+    padding: 5px 7px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+  }
+  .spacer { flex: 1; }
+
+  button {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--surface);
+    background: var(--ink);
+    border: 1px solid var(--ink);
+    border-radius: var(--radius);
+    padding: 8px 16px;
+    cursor: pointer;
+  }
+  button.ghost {
+    color: var(--ink-soft);
+    background: transparent;
+    border-color: var(--rule);
+  }
+  button:hover:not(:disabled) { opacity: 0.88; }
+  button:disabled { opacity: 0.45; cursor: progress; }
+
+  :where(button, textarea, input, a, [tabindex]):focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  .examples { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .examples button {
+    text-transform: none;
+    letter-spacing: 0;
+    font-family: var(--sans);
+    font-size: 12.5px;
+    padding: 5px 10px;
+    color: var(--ink-soft);
+    background: var(--surface-2);
+    border-color: var(--rule-soft);
+  }
+
+  /* --- the answer slip --------------------------------------------- */
+  /* Signature element: an answer is presented as an issued document -
+     stamped status, prose body, provenance line - because that is what
+     the user has to hand to someone else. */
+  #answer-panel[hidden] { display: none; }
+
+  .slip { border-top: 3px solid var(--ink); }
+  .slip[data-state="notfound"] { border-top-color: var(--flag); background: var(--flag-bg); }
+  .slip[data-state="error"] { border-top-color: var(--stamp); }
+
+  .slip-stamp {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px 0;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .slip-stamp .verdict { color: var(--verify); font-weight: 600; }
+  .slip[data-state="notfound"] .slip-stamp .verdict { color: var(--flag); }
+  .slip[data-state="error"] .slip-stamp .verdict { color: var(--stamp); }
+  .slip-stamp .meta { color: var(--ink-faint); letter-spacing: 0.06em; }
+
+  .slip-body {
+    padding: 10px 16px 16px;
+    font-family: var(--serif);
+    font-size: 16.5px;
+    line-height: 1.62;
+    white-space: pre-wrap;
+  }
+  .slip[data-state="notfound"] .slip-body { color: var(--flag); }
+
+  .slip-note {
+    margin: 0 16px 14px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--rule);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+  }
+  .slip-note li { margin: 2px 0; }
+  .slip-note ul { margin: 0; padding-left: 16px; }
+
+  .thinking {
+    padding: 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .thinking::after {
+    content: "";
+    display: inline-block;
+    width: 44px;
+    height: 1px;
+    margin-left: 10px;
+    vertical-align: middle;
+    background: var(--ink-faint);
+    animation: sweep 1.1s ease-in-out infinite;
+    transform-origin: left center;
+  }
+  @keyframes sweep { 0%, 100% { transform: scaleX(0.15); } 50% { transform: scaleX(1); } }
+
+  /* --- evidence ----------------------------------------------------- */
+  .evidence-empty, .library-empty {
+    font-size: 13.5px;
+    color: var(--ink-faint);
+    padding: 16px;
+    margin: 0;
+  }
+
+  ol.sources { list-style: none; margin: 0; padding: 0; }
+
+  .source {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .source:last-child { border-bottom: 0; }
+
+  .source .rank {
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1;
+    padding: 15px 0 0;
+    text-align: center;
+    color: var(--surface);
+    background: var(--ink);
+  }
+  .source[data-cited="false"] .rank { color: var(--ink-faint); background: var(--surface-2); }
+
+  .source .detail { padding: 12px 14px; min-width: 0; }
+
+  .source .ref {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: var(--ink);
+    word-break: break-word;
+  }
+  .source .ref .file { font-weight: 600; }
+  .source .ref .sep { color: var(--ink-faint); padding: 0 5px; }
+  .source .ref .page { color: var(--stamp); }
+  .source[data-cited="false"] .ref { color: var(--ink-soft); }
+
+  .source .section {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-top: 3px;
+    word-break: break-word;
+  }
+  .source .snippet {
+    font-family: var(--serif);
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    margin: 8px 0 0;
+  }
+  .source .score {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    margin-top: 6px;
+    letter-spacing: 0.06em;
+  }
+  .source .tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 1px 5px;
+    color: var(--ink-faint);
+    margin-left: 6px;
+  }
+
+  /* --- library ------------------------------------------------------ */
+  .drop {
+    margin: 16px;
+    padding: 18px;
+    text-align: center;
+    border: 1px dashed var(--rule);
+    border-radius: var(--radius);
+    color: var(--ink-soft);
+    font-size: 13.5px;
+  }
+  .drop.hot { border-color: var(--focus); background: var(--surface-2); }
+  .drop button { margin-top: 10px; }
+  .drop input[type="file"] { display: none; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 16px; border-top: 1px solid var(--rule-soft); }
+  th {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 500;
+  }
+  td.num { font-family: var(--mono); text-align: right; color: var(--ink-soft); }
+  td .fname { word-break: break-word; }
+  td .cfg { font-family: var(--mono); font-size: 10.5px; color: var(--ink-faint); }
+
+  .toast {
+    margin: 0 16px 16px;
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    border: 1px solid var(--rule);
+    background: var(--surface-2);
+    color: var(--ink-soft);
+  }
+  .toast[data-kind="error"] { border-color: var(--stamp); color: var(--stamp); }
+
+  .visually-hidden {
+    position: absolute; width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <h1>Endorsement Desk</h1>
+  <p>Answers come only from the endorsement pack you loaded, with the clause and page they came from.</p>
+  <div class="statusbar" id="statusbar" aria-live="polite"></div>
+</header>
+
+<main class="workspace">
+  <!-- ---------------- enquiry column ---------------- -->
+  <section aria-labelledby="enquiry-heading">
+    <div class="panel">
+      <header>
+        <h2 id="enquiry-heading">Ask</h2>
+        <span class="hint">Enter to ask &middot; Shift+Enter for a new line</span>
+      </header>
+      <form id="ask-form">
+        <label class="visually-hidden" for="question">Your question</label>
+        <textarea id="question" name="question"
+                  placeholder="What is the flood sub-limit in the annual aggregate?"></textarea>
+        <div class="controls">
+          <label for="topk">Passages</label>
+          <input type="number" id="topk" name="topk" value="5" min="1" max="20" />
+          <span class="spacer"></span>
+          <button type="submit" id="ask-button">Ask</button>
+        </div>
+        <div class="examples" id="examples"></div>
+      </form>
+    </div>
+
+    <div class="panel" id="answer-panel" hidden>
+      <header>
+        <h2>Answer</h2>
+        <span class="hint" id="answer-hint"></span>
+      </header>
+      <div id="answer-slot" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- ---------------- evidence column ---------------- -->
+  <aside aria-labelledby="sources-heading">
+    <div class="panel">
+      <header>
+        <h2 id="sources-heading">Sources</h2>
+        <span class="hint" id="sources-hint"></span>
+      </header>
+      <div id="sources-slot">
+        <p class="evidence-empty">Every answer lists the passages behind it here — filename, page and clause.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <header>
+        <h2 id="library-heading">Library</h2>
+        <span class="hint" id="library-hint"></span>
+      </header>
+      <div class="drop" id="drop">
+        Drop endorsement PDFs here
+        <br />
+        <button type="button" class="ghost" id="browse">Choose files</button>
+        <input type="file" id="file-input" accept="application/pdf,.pdf" multiple />
+      </div>
+      <div id="library-toast"></div>
+      <div id="library-slot">
+        <p class="library-empty">No documents loaded yet.</p>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  // Served from the API in normal use; opened straight off disk while
+  // hacking on the page, in which case point at the local server.
+  const API = location.protocol === "file:" ? "http://127.0.0.1:8000" : "";
+
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, className, text) => {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  };
+
+  const EXAMPLES = [
+    "What is the flood sub-limit in the annual aggregate?",
+    "What deductible applies to flood losses?",
+    "How long is the business interruption waiting period?",
+    "Does the cyber exclusion write back cover for fire?",
+  ];
+
+  async function api(path, options) {
+    const response = await fetch(API + path, options);
+    const text = await response.text();
+    let body = null;
+    try { body = text ? JSON.parse(text) : null; } catch { /* non-JSON error page */ }
+    if (!response.ok) {
+      const detail = (body && (body.detail || body.message)) || text || response.statusText;
+      throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+    }
+    return body;
+  }
+
+  /* ---------------- status bar ---------------- */
+  async function refreshStatus() {
+    const bar = $("statusbar");
+    bar.replaceChildren();
+    try {
+      const health = await api("/health");
+      const chips = [
+        `${health.documents} doc${health.documents === 1 ? "" : "s"} · ${health.chunks} chunks`,
+        `chunk ${health.chunking.chunk_size}/${health.chunking.chunk_overlap}`,
+        health.embeddings.model,
+        health.generation.configured ? health.generation.model : "generation not configured",
+      ];
+      chips.forEach((label) => bar.append(el("span", "stat", label)));
+      if (!health.generation.configured) bar.lastChild.dataset.state = "down";
+    } catch (error) {
+      const chip = el("span", "stat", "API unreachable — start the server on :8000");
+      chip.dataset.state = "down";
+      bar.append(chip);
+    }
+  }
+
+  /* ---------------- library ---------------- */
+  function renderLibrary(payload) {
+    const slot = $("library-slot");
+    slot.replaceChildren();
+    $("library-hint").textContent = payload.count
+      ? `${payload.total_chunks} chunks indexed`
+      : "";
+
+    if (!payload.count) {
+      slot.append(el("p", "library-empty", "No documents loaded yet."));
+      return;
+    }
+
+    const table = el("table");
+    const head = el("tr");
+    ["Document", "Pages", "Chunks"].forEach((label, index) => {
+      head.append(el("th", index ? "num" : null, label));
+    });
+    const thead = el("thead");
+    thead.append(head);
+    table.append(thead);
+
+    const body = el("tbody");
+    payload.documents.forEach((doc) => {
+      const row = el("tr");
+      const name = el("td");
+      name.append(el("div", "fname", doc.filename));
+      name.append(el("div", "cfg", `chunk ${doc.chunk_size}/${doc.chunk_overlap} · ${doc.embedding_model}`));
+      row.append(name);
+      row.append(el("td", "num", String(doc.pages)));
+      row.append(el("td", "num", String(doc.chunks)));
+      body.append(row);
+    });
+    table.append(body);
+    slot.append(table);
+  }
+
+  async function refreshLibrary() {
+    try {
+      renderLibrary(await api("/documents"));
+    } catch (error) {
+      toast(`Could not list documents. ${error.message}`, "error");
+    }
+  }
+
+  function toast(message, kind) {
+    const slot = $("library-toast");
+    slot.replaceChildren();
+    if (!message) return;
+    const node = el("div", "toast", message);
+    if (kind) node.dataset.kind = kind;
+    slot.append(node);
+  }
+
+  async function upload(files) {
+    const pdfs = Array.from(files).filter((file) => /\.pdf$/i.test(file.name) || file.type === "application/pdf");
+    if (!pdfs.length) {
+      toast("Those files are not PDFs. Endorsement packs must be uploaded as PDF.", "error");
+      return;
+    }
+
+    const form = new FormData();
+    pdfs.forEach((file) => form.append("files", file, file.name));
+    toast(`Indexing ${pdfs.length} file${pdfs.length === 1 ? "" : "s"}…`);
+
+    try {
+      const result = await api("/ingest", { method: "POST", body: form });
+      const chunks = result.total_chunks;
+      const names = result.documents.map((doc) => doc.filename).join(", ");
+      toast(`Indexed ${names} — ${chunks} chunks.${result.errors.length ? " " + result.errors.join("; ") : ""}`);
+      await Promise.all([refreshLibrary(), refreshStatus()]);
+    } catch (error) {
+      toast(`Upload failed. ${error.message}`, "error");
+    }
+  }
+
+  /* ---------------- answering ---------------- */
+  function renderSources(hits, citedIds) {
+    const slot = $("sources-slot");
+    slot.replaceChildren();
+
+    if (!hits.length) {
+      slot.append(el("p", "evidence-empty", "Nothing was retrieved for that question."));
+      $("sources-hint").textContent = "";
+      return;
+    }
+
+    $("sources-hint").textContent = `${citedIds.size} of ${hits.length} cited`;
+
+    const list = el("ol", "sources");
+    hits.forEach((hit) => {
+      const cited = citedIds.has(hit.chunk_id);
+      const item = el("li", "source");
+      item.dataset.cited = String(cited);
+
+      item.append(el("div", "rank", String(hit.rank)));
+
+      const detail = el("div", "detail");
+      const ref = el("div", "ref");
+      ref.append(el("span", "file", hit.filename));
+      ref.append(el("span", "sep", "·"));
+      ref.append(el("span", "page", `p. ${hit.page}`));
+      if (!cited) ref.append(el("span", "tag", "not cited"));
+      detail.append(ref);
+      detail.append(el("div", "section", hit.section || "(unlabelled)"));
+      if (hit.snippet) detail.append(el("p", "snippet", hit.snippet));
+      detail.append(el("div", "score", `similarity ${hit.score.toFixed(3)}`));
+
+      item.append(detail);
+      list.append(item);
+    });
+    slot.append(list);
+  }
+
+  function renderAnswer(payload) {
+    const panel = $("answer-panel");
+    const slot = $("answer-slot");
+    panel.hidden = false;
+    slot.replaceChildren();
+
+    const slip = el("div", "slip");
+    slip.dataset.state = payload.found ? "found" : "notfound";
+
+    const stamp = el("div", "slip-stamp");
+    stamp.append(el("span", "verdict", payload.found ? "Answered" : "Not in the documents"));
+    const meta = payload.found
+      ? `${payload.citations.length} citation${payload.citations.length === 1 ? "" : "s"} · ${payload.chunks_used} passages read`
+      : "nothing in the pack supports an answer";
+    stamp.append(el("span", "meta", meta));
+    slip.append(stamp);
+
+    slip.append(el("div", "slip-body", payload.answer));
+
+    if (payload.notes && payload.notes.length) {
+      const note = el("div", "slip-note");
+      const list = el("ul");
+      payload.notes.forEach((text) => list.append(el("li", null, text)));
+      note.append(list);
+      slip.append(note);
+    }
+
+    slot.append(slip);
+    $("answer-hint").textContent = payload.model ? payload.model : "";
+  }
+
+  function renderFailure(message) {
+    const panel = $("answer-panel");
+    const slot = $("answer-slot");
+    panel.hidden = false;
+    slot.replaceChildren();
+
+    const slip = el("div", "slip");
+    slip.dataset.state = "error";
+    const stamp = el("div", "slip-stamp");
+    stamp.append(el("span", "verdict", "Request failed"));
+    slip.append(stamp);
+    slip.append(el("div", "slip-body", message));
+    slot.append(slip);
+    $("answer-hint").textContent = "";
+  }
+
+  async function ask(question) {
+    const button = $("ask-button");
+    button.disabled = true;
+    $("answer-panel").hidden = false;
+    $("answer-slot").replaceChildren(el("div", "thinking", "Reading the pack"));
+    $("answer-hint").textContent = "";
+
+    try {
+      const payload = await api("/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, top_k: Number($("topk").value) || 5 }),
+      });
+      renderAnswer(payload);
+      renderSources(payload.retrieval || [], new Set((payload.citations || []).map((c) => c.chunk_id)));
+    } catch (error) {
+      renderFailure(error.message);
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  /* ---------------- wiring ---------------- */
+  const form = $("ask-form");
+  const question = $("question");
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const text = question.value.trim();
+    if (text) ask(text);
+  });
+
+  question.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      form.requestSubmit();
+    }
+  });
+
+  EXAMPLES.forEach((text) => {
+    const button = el("button", null, text);
+    button.type = "button";
+    button.addEventListener("click", () => {
+      question.value = text;
+      question.focus();
+    });
+    $("examples").append(button);
+  });
+
+  $("browse").addEventListener("click", () => $("file-input").click());
+  $("file-input").addEventListener("change", (event) => {
+    upload(event.target.files);
+    event.target.value = "";
+  });
+
+  const drop = $("drop");
+  ["dragenter", "dragover"].forEach((name) =>
+    drop.addEventListener(name, (event) => {
+      event.preventDefault();
+      drop.classList.add("hot");
+    })
+  );
+  ["dragleave", "drop"].forEach((name) =>
+    drop.addEventListener(name, (event) => {
+      event.preventDefault();
+      drop.classList.remove("hot");
+    })
+  );
+  drop.addEventListener("drop", (event) => {
+    if (event.dataTransfer && event.dataTransfer.files.length) upload(event.dataTransfer.files);
+  });
+
+  refreshStatus();
+  refreshLibrary();
+})();
+</script>
+</body>
+</html>
