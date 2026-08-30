@@ -204,11 +204,11 @@ wrong ones, which is this corpus's whole point.
 The one retrieval change: `app/hybrid_retrieval.py` (new — BM25 index, RRF
 fusion, MMR), wired into `RagService.retrieve()` in `app/rag.py` behind
 `RETRIEVAL_MODE`, plus `VectorStore.all_chunks()` (`app/store.py`) so BM25 has
-something to index. Full diff: `git show <commit>` for the commit tagged
-`w4-retrieval-change` (see the top-level report for the hash) — or:
+something to index. Committed at `be081e6` ("Add generic LLM provider
+abstraction and Week 4 hybrid retrieval (BM25+RRF)"):
 
 ```bash
-git diff <before-commit> -- app/hybrid_retrieval.py app/rag.py app/store.py app/config.py
+git show be081e6 -- app/hybrid_retrieval.py app/rag.py app/store.py app/config.py
 ```
 
 Config additions (`app/config.py`): `RETRIEVAL_MODE` (`dense` |

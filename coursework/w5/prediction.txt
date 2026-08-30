@@ -1,0 +1,22 @@
+Week 5 prediction — written 2026-08-31, before any fix.
+
+Target mode: "Quotes the applicable clause but states the opposite coverage
+verdict" (7/20 = 35% of the random sample, coursework/w5/taxonomy.md).
+
+Planned change (Week 6): add a deterministic post-hoc consistency check
+between the cited passage's polarity and the stated coverage_decision --
+if the cited passage text contains a negation/exclusion cue (e.g. "does not
+cover", "excludes", "shall not be liable") the decision must be "denied" or
+"needs_review", never "covered", and vice versa for a carve-out phrase like
+"does not apply". A violation gets corrected to "needs_review" rather than
+shipped, mirroring the citation-verification guarantee /ask already has.
+
+Prediction: this drops the verdict-inversion mode from 35% (7/20) to under
+10% on a fresh random sample of the same size next week.
+
+What it will NOT fix, and I expect it to still show up: mode 3 (wrong
+exclusion-id label on an otherwise-correct decision, 25% of this sample) and
+mode 2 (topically unrelated citation, 20%) are not polarity problems -- a
+consistency check on an already-wrong citation just agrees with the wrong
+citation. I expect mode 2's frequency to be roughly unchanged by this
+specific change.

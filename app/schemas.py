@@ -12,6 +12,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from app.claims import ClaimSummary
 from app.models import Citation, DocumentRecord
 from app.rag import IngestResult
 
@@ -19,12 +20,14 @@ __all__ = [
     "AskRequest",
     "AskResponse",
     "CitationModel",
+    "ClaimSummaryResponse",
     "DocumentModel",
     "DocumentsResponse",
     "HealthResponse",
     "IngestResponse",
     "IngestedDocumentModel",
     "RetrievalHit",
+    "SummarizeClaimRequest",
 ]
 
 
@@ -79,6 +82,41 @@ class AskResponse(BaseModel):
     model: str | None = None
     retrieval: list[RetrievalHit] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
+
+
+class SummarizeClaimRequest(BaseModel):
+    adjuster_notes: str = Field(min_length=1, max_length=8000)
+    top_k: int | None = Field(default=None, ge=1, le=50)
+
+
+class ClaimSummaryResponse(BaseModel):
+    claim_number: str
+    date_of_loss: str
+    coverage_decision: str
+    cited_exclusion_id: str | None = None
+    excess_amount: float | None = None
+    summary: str
+    citations: list[CitationModel]
+    chunks_used: int
+    model: str | None = None
+    retrieval: list[RetrievalHit] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+
+    @classmethod
+    def from_summary(cls, summary: ClaimSummary, retrieval: list[RetrievalHit]) -> "ClaimSummaryResponse":
+        return cls(
+            claim_number=summary.claim_number,
+            date_of_loss=summary.date_of_loss,
+            coverage_decision=summary.coverage_decision,
+            cited_exclusion_id=summary.cited_exclusion_id,
+            excess_amount=summary.excess_amount,
+            summary=summary.summary,
+            citations=[CitationModel.from_citation(c) for c in summary.citations],
+            chunks_used=summary.chunks_used,
+            model=summary.model,
+            retrieval=retrieval,
+            notes=summary.notes,
+        )
 
 
 class IngestedDocumentModel(BaseModel):
@@ -137,3 +175,4 @@ class HealthResponse(BaseModel):
     vector_store: dict[str, Any]
     retrieval: dict[str, Any]
     generation: dict[str, Any]
+    claim_summaries: dict[str, Any]

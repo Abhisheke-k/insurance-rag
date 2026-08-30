@@ -2,11 +2,12 @@
 
 Endpoints
 ---------
-``POST /ingest``       multipart upload of one or more endorsement PDFs
-``POST /ask``          question -> grounded answer + citations
-``GET  /documents``    what has been ingested, and under which settings
-``GET  /health``       resolved configuration and store status
-``GET  /ui``           the self-contained single-page frontend
+``POST /ingest``            multipart upload of one or more endorsement PDFs
+``POST /ask``                question -> grounded answer + citations
+``POST /summarize-claim``    adjuster notes -> structured, cited claim summary
+``GET  /documents``          what has been ingested, and under which settings
+``GET  /health``             resolved configuration and store status
+``GET  /ui``                  the self-contained single-page frontend
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.claims import ClaimSummaryGenerationError
 from app.config import Settings, get_settings
 from app.generation import GenerationUnavailableError
 from app.rag import RagService
@@ -28,12 +30,14 @@ from app.schemas import (
     AskRequest,
     AskResponse,
     CitationModel,
+    ClaimSummaryResponse,
     DocumentModel,
     DocumentsResponse,
     HealthResponse,
     IngestedDocumentModel,
     IngestResponse,
     RetrievalHit,
+    SummarizeClaimRequest,
 )
 
 logger = logging.getLogger(__name__)
@@ -167,6 +171,36 @@ def create_app(settings: Settings | None = None, service: RagService | None = No
             ],
             notes=answer.notes,
         )
+
+    # ------------------------------------------------------------------ #
+    @app.post("/summarize-claim", response_model=ClaimSummaryResponse, tags=["claims"])
+    def summarize_claim(payload: SummarizeClaimRequest, service: ServiceDep) -> ClaimSummaryResponse:
+        """Turn adjuster notes into a structured, cited claim summary.
+
+        See coursework/w5/ and coursework/w6/ for the error analysis and eval
+        this endpoint's output is validated against.
+        """
+        try:
+            outcome = service.summarize_claim(payload.adjuster_notes, payload.top_k)
+        except ValueError as exc:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+        except ClaimSummaryGenerationError as exc:
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc)) from exc
+
+        cited_ids = {citation.chunk_id for citation in outcome.summary.citations}
+        retrieval = [
+            RetrievalHit(
+                rank=rank,
+                chunk_id=chunk.chunk_id,
+                filename=chunk.filename,
+                page=chunk.page,
+                section=chunk.section,
+                score=round(chunk.score, 4),
+                cited=chunk.chunk_id in cited_ids,
+            )
+            for rank, chunk in enumerate(outcome.retrieved, start=1)
+        ]
+        return ClaimSummaryResponse.from_summary(outcome.summary, retrieval)
 
     # ------------------------------------------------------------------ #
     @app.get("/documents", response_model=DocumentsResponse, tags=["documents"])

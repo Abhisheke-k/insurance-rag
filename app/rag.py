@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from typing import Any, Sequence
 
 from app.chunking import StructureAwareChunker, build_chunker
+from app.claims import ClaimSummary, ClaimSummaryGenerator
 from app.config import Settings
 from app.embeddings import Embedder, build_embedder
 from app.generation import AnswerGenerator, not_found_answer
@@ -54,6 +55,14 @@ class AskOutcome:
     gated: bool = False
 
 
+@dataclass(frozen=True, slots=True)
+class ClaimSummaryOutcome:
+    """A claim summary plus the policy/endorsement evidence behind it."""
+
+    summary: ClaimSummary
+    retrieved: list[RetrievedChunk] = field(default_factory=list)
+
+
 class RagService:
     """Wires the pipeline together and owns process-level state."""
 
@@ -66,6 +75,7 @@ class RagService:
         registry: DocumentRegistry | None = None,
         generator: AnswerGenerator | None = None,
         chunker: StructureAwareChunker | None = None,
+        claim_generator: ClaimSummaryGenerator | None = None,
     ) -> None:
         self.settings = settings
         self.embedder = embedder or build_embedder(settings)
@@ -73,6 +83,7 @@ class RagService:
         self.registry = registry or DocumentRegistry(settings.registry_path)
         self.generator = generator or AnswerGenerator(settings)
         self.chunker = chunker or build_chunker(settings)
+        self.claim_generator = claim_generator or ClaimSummaryGenerator(settings)
         self._bm25_index: BM25Index | None = None
         self._bm25_dirty = True
 
@@ -244,6 +255,25 @@ class RagService:
         return AskOutcome(answer=answer, retrieved=retrieved, best_score=best_score, gated=False)
 
     # ------------------------------------------------------------------ #
+    # Claim summaries
+    # ------------------------------------------------------------------ #
+    def summarize_claim(self, adjuster_notes: str, top_k: int | None = None) -> ClaimSummaryOutcome:
+        """Retrieve policy/endorsement context for ``adjuster_notes`` and summarise coverage.
+
+        No relevance gate here, unlike ``ask()``: a claim always deserves a
+        summary, even a ``needs_review`` one when nothing in the corpus
+        clearly applies -- silently refusing is not an option a claims desk
+        can work with the way it is for open-ended Q&A.
+        """
+        adjuster_notes = adjuster_notes.strip()
+        if not adjuster_notes:
+            raise ValueError("adjuster notes must not be empty")
+
+        retrieved = self.retrieve(adjuster_notes, top_k)
+        summary = self.claim_generator.summarize(adjuster_notes, retrieved)
+        return ClaimSummaryOutcome(summary=summary, retrieved=retrieved)
+
+    # ------------------------------------------------------------------ #
     # Documents / health
     # ------------------------------------------------------------------ #
     def documents(self) -> list[DocumentRecord]:
@@ -279,6 +309,7 @@ class RagService:
                 "mmr_lambda": self.settings.mmr_lambda,
             },
             "generation": self.generator.status(),
+            "claim_summaries": self.claim_generator.status(),
         }
 
 
