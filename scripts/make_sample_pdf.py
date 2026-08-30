@@ -250,6 +250,90 @@ CONTENT: list[tuple[str, str]] = [
         "within that period entitles the Insurer to cancel in accordance with General Condition "
         "1 above.",
     ),
+    ("heading", "ENDORSEMENT NO. 4 - SEQUENTIAL WATER INTRUSION EXCLUSION"),
+    (
+        "body",
+        "Effective from 1 February 2025. This endorsement is issued under reference "
+        "END-2024-0417 and adopts the exclusion wording of Form HO-0304 edition 03-24, "
+        "reproduced at clause 4.3 below, which supersedes and replaces any earlier edition "
+        "of Form HO-0304 referenced in the Insured's document file.",
+    ),
+    ("heading", "4.3 Exclusion Code E-17 - Sequential Water Intrusion Events"),
+    (
+        "body",
+        "Exclusion Code E-17 (Form HO-0304, edition 03-24). This policy does not cover loss "
+        "or damage arising from a second or subsequent Flood event at the same insured "
+        "location where that event occurs within 60 consecutive days of an earlier Flood "
+        "event at the same location, regardless of whether a claim was made for the earlier "
+        "event. This exclusion applies in addition to, and does not narrow, the deductible "
+        "and sub-limit provisions of clauses 2 and 3 above.",
+    ),
+    ("heading", "4.4 Interaction with the Flood Defence Condition"),
+    (
+        "body",
+        "Exclusion Code E-17 does not apply where the Insured can demonstrate that the "
+        "flood barriers, non-return valves and sump pumps required by clause 4.1 were "
+        "tested and in good working order in the 60 days immediately preceding the second "
+        "or subsequent Flood event.",
+    ),
+]
+
+#: A second, separate document: prior editions of Form HO-0304 kept on file for audit
+#: purposes. Deliberately near-duplicate wording to Endorsement No. 4 above -- this is
+#: the source of the Week 4 retrieval-confusion scenario ("your top-3 for the E-17 query
+#: are the same exclusion text repeated across three form editions").
+CONTENT_FORM_LIBRARY: list[tuple[str, str]] = [
+    ("title", "FORM LIBRARY - ARCHIVED WORDING ON FILE"),
+    (
+        "body",
+        "This file retains prior editions of Form HO-0304 for audit and reference purposes "
+        "against policy GML-2024-88213. The edition currently endorsed to the policy is "
+        "03-24 (see the water-damage endorsement in the main endorsement pack for its "
+        "reference number). Earlier editions below are retained for reference only and do "
+        "not apply to a loss occurring after the date their text says they were superseded.",
+    ),
+    ("heading", "FORM HO-0304 - EDITION 01-22"),
+    ("heading", "EXCLUSION CODE E-17 - SEQUENTIAL WATER INTRUSION EVENTS (EDITION 01-22)"),
+    (
+        "body",
+        "Exclusion Code E-17 (Form HO-0304, edition 01-22). This policy does not cover loss "
+        "or damage arising from a second or subsequent Flood event at the same insured "
+        "location where that event occurs within 30 consecutive days of an earlier Flood "
+        "event at the same location. Superseded by edition 06-22 with effect from "
+        "1 June 2022.",
+    ),
+    ("heading", "FORM HO-0304 - EDITION 06-22"),
+    ("heading", "EXCLUSION CODE E-17 - SEQUENTIAL WATER INTRUSION EVENTS (EDITION 06-22)"),
+    (
+        "body",
+        "Exclusion Code E-17 (Form HO-0304, edition 06-22). This policy does not cover loss "
+        "or damage arising from a second or subsequent Flood event at the same insured "
+        "location where that event occurs within 35 consecutive days of an earlier Flood "
+        "event at the same location. Superseded by edition 09-23 with effect from "
+        "1 September 2023.",
+    ),
+    ("heading", "FORM HO-0304 - EDITION 09-23"),
+    ("heading", "EXCLUSION CODE E-17 - SEQUENTIAL WATER INTRUSION EVENTS (EDITION 09-23)"),
+    (
+        "body",
+        "Exclusion Code E-17 (Form HO-0304, edition 09-23). This policy does not cover loss "
+        "or damage arising from a second or subsequent Flood event at the same insured "
+        "location where that event occurs within 45 consecutive days of an earlier Flood "
+        "event at the same location, save that this exclusion does not apply to a Flood "
+        "event caused solely by a named windstorm. Superseded by edition 01-24 with effect "
+        "from 1 January 2024.",
+    ),
+    ("heading", "FORM HO-0304 - EDITION 01-24"),
+    ("heading", "EXCLUSION CODE E-17 - SEQUENTIAL WATER INTRUSION EVENTS (EDITION 01-24)"),
+    (
+        "body",
+        "Exclusion Code E-17 (Form HO-0304, edition 01-24). This policy does not cover loss "
+        "or damage arising from a second or subsequent Flood event at the same insured "
+        "location where that event occurs within 55 consecutive days of an earlier Flood "
+        "event at the same location, save that this exclusion does not apply to a Flood "
+        "event caused solely by a named windstorm. Superseded by edition 03-24 with effect "
+        "from 1 February 2025.",
+    ),
 ]
 
 #: Question -> (expected substring in the answering chunk, expected clause label fragment).
@@ -343,15 +427,14 @@ class _PageWriter:
             )
 
 
-def build_sample_pdf(path: str | Path) -> Path:
-    """Write the sample endorsement pack to ``path`` and return it."""
+def _build_pdf(path: str | Path, content: list[tuple[str, str]]) -> Path:
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
 
     document = pymupdf.open()
     try:
         writer = _PageWriter(document)
-        for style, text in CONTENT:
+        for style, text in content:
             writer.write(style, text)
         writer.add_footers()
         document.save(str(destination))
@@ -360,6 +443,25 @@ def build_sample_pdf(path: str | Path) -> Path:
     return destination
 
 
+def build_sample_pdf(path: str | Path) -> Path:
+    """Write the sample endorsement pack to ``path`` and return it."""
+    return _build_pdf(path, CONTENT)
+
+
+def build_form_library_pdf(path: str | Path) -> Path:
+    """Write the archived Form HO-0304 edition library to ``path`` and return it.
+
+    A second, separate document on purpose: it is what a real claims desk would
+    actually have on file (superseded form editions kept for audit), and
+    ingesting it as its own document alongside the main pack is what lets
+    Week 4 demonstrate retrieval confusing one edition for another.
+    """
+    return _build_pdf(path, CONTENT_FORM_LIBRARY)
+
+
 if __name__ == "__main__":
-    output = build_sample_pdf(Path(__file__).resolve().parent.parent / "data" / "sample_endorsement_pack.pdf")
+    root = Path(__file__).resolve().parent.parent / "data"
+    output = build_sample_pdf(root / "sample_endorsement_pack.pdf")
     print(f"wrote {output}")
+    library = build_form_library_pdf(root / "form_ho0304_archive.pdf")
+    print(f"wrote {library}")

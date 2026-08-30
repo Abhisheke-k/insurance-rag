@@ -17,6 +17,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 EmbeddingProvider = Literal["auto", "voyage", "sentence-transformers", "hashing"]
 Effort = Literal["low", "medium", "high", "xhigh", "max"]
+LLMProviderName = Literal["auto", "anthropic", "openai", "stub"]
+RetrievalMode = Literal["dense", "hybrid_bm25_rrf"]
 
 
 class Settings(BaseSettings):
@@ -90,11 +92,42 @@ class Settings(BaseSettings):
             "MiniLM cosines sit much higher -- re-tune before trusting the gate on those."
         ),
     )
+    retrieval_mode: RetrievalMode = Field(
+        default="dense",
+        description=(
+            "'dense' -- cosine search over the embedder only (the original behaviour). "
+            "'hybrid_bm25_rrf' -- BM25 over chunk text, fused with dense ranks via "
+            "Reciprocal Rank Fusion (k=60). See app/hybrid_retrieval.py and the Week 4 "
+            "retrieval writeup in coursework/w4/."
+        ),
+    )
+    rrf_k: int = Field(default=60, ge=1, description="RRF fusion constant k in 1/(k+rank).")
+    bm25_candidates: int = Field(
+        default=25, ge=1, description="How many candidates each of BM25/dense contributes before fusion."
+    )
+    mmr_lambda: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "If set, apply Maximal Marginal Relevance over the fused candidate list before "
+            "truncating to top_k. 1.0 = pure relevance (no diversity), 0.0 = pure diversity. "
+            "None disables MMR. Week 4 bonus challenge."
+        ),
+    )
 
     # ------------------------------------------------------------------ #
-    # Generation
+    # Generation -- LLM provider
+    #
+    # Mirrors EMBEDDING_PROVIDER: one interface (app/llm.py), several backends,
+    # resolved in this order under 'auto': Anthropic -> OpenAI -> deterministic
+    # stub. The stub makes the whole pipeline (including the Week 5/6 tracing
+    # and eval tooling) runnable with no API key and no network call.
     # ------------------------------------------------------------------ #
+    llm_provider: LLMProviderName = "auto"
     anthropic_api_key: str | None = None
+    openai_api_key: str | None = None
+    openai_model: str = "gpt-4o-mini"
     answer_model: str = "claude-opus-5"
     answer_effort: Effort = "medium"
     answer_max_tokens: int = Field(default=16000, ge=1024)

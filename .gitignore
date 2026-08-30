@@ -16,6 +16,7 @@ data/*.pdf
 .chunk-comparison/
 .chroma_check/
 .tmp/
+.eval_scratch/
 
 # Editors / OS
 .idea/

@@ -16,6 +16,7 @@ from app.chunking import StructureAwareChunker, build_chunker
 from app.config import Settings
 from app.embeddings import Embedder, build_embedder
 from app.generation import AnswerGenerator, not_found_answer
+from app.hybrid_retrieval import BM25Index, hybrid_retrieve
 from app.models import Chunk, DocumentRecord, GeneratedAnswer, RetrievedChunk
 from app.parsing import parse_pdf_bytes
 from app.registry import DocumentRegistry
@@ -72,6 +73,8 @@ class RagService:
         self.registry = registry or DocumentRegistry(settings.registry_path)
         self.generator = generator or AnswerGenerator(settings)
         self.chunker = chunker or build_chunker(settings)
+        self._bm25_index: BM25Index | None = None
+        self._bm25_dirty = True
 
     # ------------------------------------------------------------------ #
     # Ingestion
@@ -120,6 +123,7 @@ class RagService:
 
         vectors = self.embedder.embed_documents([self._embedding_text(chunk) for chunk in chunks])
         self.store.add_chunks(chunks, vectors)
+        self._bm25_dirty = True
 
         record = DocumentRecord(
             doc_id=doc_id,
@@ -161,9 +165,38 @@ class RagService:
     # ------------------------------------------------------------------ #
     # Retrieval
     # ------------------------------------------------------------------ #
+    def _ensure_bm25_index(self) -> BM25Index:
+        if self._bm25_index is None or self._bm25_dirty:
+            self._bm25_index = BM25Index()
+            self._bm25_index.build(self.store.all_chunks())
+            self._bm25_dirty = False
+        return self._bm25_index
+
     def retrieve(self, question: str, top_k: int | None = None) -> list[RetrievedChunk]:
-        """Embed the question and return the closest chunks, best first."""
+        """Return the closest chunks to ``question``, best first.
+
+        Two modes, selected by ``RETRIEVAL_MODE`` (see app/config.py and the
+        Week 4 writeup in coursework/w4/): 'dense' is cosine search over the
+        embedder alone (the original behaviour); 'hybrid_bm25_rrf' additionally
+        searches a BM25 index and fuses the two rankings, which is materially
+        better at exact identifiers (exclusion codes, form numbers) that dense
+        embeddings blur. MMR diversification runs after fusion when
+        MMR_LAMBDA is set.
+        """
         k = top_k or self.settings.top_k
+        if self.settings.retrieval_mode == "hybrid_bm25_rrf":
+            result = hybrid_retrieve(
+                question,
+                embedder=self.embedder,
+                store=self.store,
+                bm25_index=self._ensure_bm25_index(),
+                top_k=k,
+                candidate_pool=self.settings.bm25_candidates,
+                rrf_k=self.settings.rrf_k,
+                mmr_lambda=self.settings.mmr_lambda,
+            )
+            return result.hits
+
         vector = self.embedder.embed_query(question)
         return self.store.query(vector, k)
 
@@ -218,6 +251,7 @@ class RagService:
 
     def delete_document(self, doc_id: str) -> bool:
         self.store.delete_document(doc_id)
+        self._bm25_dirty = True
         return self.registry.remove(doc_id)
 
     def health(self) -> dict[str, Any]:
@@ -240,6 +274,9 @@ class RagService:
             "retrieval": {
                 "top_k": self.settings.top_k,
                 "min_relevance": self.settings.min_relevance,
+                "mode": self.settings.retrieval_mode,
+                "rrf_k": self.settings.rrf_k if self.settings.retrieval_mode == "hybrid_bm25_rrf" else None,
+                "mmr_lambda": self.settings.mmr_lambda,
             },
             "generation": self.generator.status(),
         }

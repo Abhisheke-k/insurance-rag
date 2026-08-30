@@ -44,6 +44,8 @@ class VectorStore(Protocol):
 
     def describe(self) -> dict[str, Any]: ...
 
+    def all_chunks(self) -> list[RetrievedChunk]: ...
+
 
 def _to_retrieved(metadata: dict[str, Any], text: str, score: float) -> RetrievedChunk:
     return RetrievedChunk(
@@ -136,6 +138,18 @@ class ChromaVectorStore:
     def count(self) -> int:
         return int(self._collection.count())
 
+    def all_chunks(self) -> list[RetrievedChunk]:
+        """Every stored chunk, unscored -- the corpus snapshot BM25 indexes over."""
+        if self.count() == 0:
+            return []
+        result = self._collection.get(include=["documents", "metadatas"])
+        documents = result.get("documents") or []
+        metadatas = result.get("metadatas") or []
+        return [
+            _to_retrieved(dict(metadata or {}), text or "", 0.0)
+            for text, metadata in zip(documents, metadatas)
+        ]
+
     def reset(self) -> None:
         """Drop and recreate the collection (used by re-ingestion tooling)."""
         self._client.delete_collection(self._collection_name)
@@ -195,6 +209,10 @@ class InMemoryVectorStore:
 
     def count(self) -> int:
         return len(self._chunks)
+
+    def all_chunks(self) -> list[RetrievedChunk]:
+        """Every stored chunk, unscored -- the corpus snapshot BM25 indexes over."""
+        return [_to_retrieved(chunk.to_metadata(), chunk.text, 0.0) for chunk in self._chunks.values()]
 
     def describe(self) -> dict[str, Any]:
         return {"backend": self.backend, "collection": "memory", "chunks": self.count()}

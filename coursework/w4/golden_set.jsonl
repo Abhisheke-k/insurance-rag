@@ -1,0 +1,12 @@
+{"id": "H1", "question": "Does exclusion E-17 apply under form HO-0304 ed. 03-24? Second flood at the same site, six weeks after the first.", "expects": "within 60 consecutive days", "hard_token": "exclusion_code", "chunk_id": "399904d5d2107b14::0022"}
+{"id": "H2", "question": "Under form HO-0304 edition 01-22, what's the day-count trigger for exclusion E-17?", "expects": "within 30 consecutive days", "hard_token": "form_edition", "chunk_id": "bccb1c5b9d0662a7::0001"}
+{"id": "H3", "question": "What's the endorsement reference number for the E-17 sequential water intrusion exclusion?", "expects": "END-2024-0417", "hard_token": "reference_number", "chunk_id": "399904d5d2107b14::0021"}
+{"id": "H4", "question": "What is the policy number shown on this endorsement pack?", "expects": "Policy Number GML-2024-88213", "hard_token": "policy_number", "chunk_id": "399904d5d2107b14::0000"}
+{"id": "H5", "question": "Under form HO-0304 edition 09-23, what's the day-count trigger for exclusion E-17?", "expects": "within 45 consecutive days", "hard_token": "form_edition", "chunk_id": "bccb1c5b9d0662a7::0003"}
+{"id": "S1", "question": "What did the flood sub-limit get bumped up to in the annual aggregate?", "expects": "GBP 5,000,000", "hard_token": null, "chunk_id": "399904d5d2107b14::0002"}
+{"id": "S2", "question": "What deductible applies if a flood loss happens inside a flood zone?", "expects": "GBP 250,000", "hard_token": null, "chunk_id": "399904d5d2107b14::0003"}
+{"id": "S3", "question": "How long is the waiting period on the business interruption section?", "expects": "72 consecutive hours", "hard_token": null, "chunk_id": "399904d5d2107b14::0018"}
+{"id": "S4", "question": "How much written notice do we need to give to cancel the policy?", "expects": "60 days written notice", "hard_token": null, "chunk_id": "399904d5d2107b14::0020"}
+{"id": "S5", "question": "How often does the insured need to test their flood barriers and sump pumps?", "expects": "six months", "hard_token": null, "chunk_id": "399904d5d2107b14::0004"}
+{"id": "S6", "question": "Does the cyber exclusion write back cover for fire damage?", "expects": "fire or explosion", "hard_token": null, "chunk_id": "399904d5d2107b14::0017"}
+{"id": "S7", "question": "How many days do we have to notify a business interruption claim?", "expects": "within 30 days", "hard_token": null, "chunk_id": "399904d5d2107b14::0019"}

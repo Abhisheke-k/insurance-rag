@@ -1,0 +1,732 @@
+{
+  "dense": {
+    "mode": "dense",
+    "mmr_lambda": null,
+    "hit_rate_at_3": 0.75,
+    "hits": 9,
+    "total": 12,
+    "p50_latency_ms": 6.622,
+    "per_question": [
+      {
+        "id": "H1",
+        "question": "Does exclusion E-17 apply under form HO-0304 ed. 03-24? Second flood at the same site, six weeks after the first.",
+        "hard_token": "exclusion_code",
+        "gold_chunk_id": "399904d5d2107b14::0022",
+        "top3": [
+          {
+            "chunk_id": "bccb1c5b9d0662a7::0004",
+            "score": 0.7574,
+            "section": "FORM HO-0304 - EDITION 01-24",
+            "snippet": "Superseded by edition 01-24 with effect from 1 January 2024.\n\nFORM HO-0304 - EDITION 01-24\nEXCLUSION CODE E-17 - SEQUENTIAL WATER INTRUSION EVENTS (EDITION 01-2"
+          },
+          {
+            "chunk_id": "bccb1c5b9d0662a7::0003",
+            "score": 0.7512,
+            "section": "FORM HO-0304 - EDITION 09-23",
+            "snippet": "Superseded by edition 09-23 with effect from 1 September 2023.\n\nFORM HO-0304 - EDITION 09-23\nEXCLUSION CODE E-17 - SEQUENTIAL WATER INTRUSION EVENTS (EDITION 09"
+          },
+          {
+            "chunk_id": "bccb1c5b9d0662a7::0002",
+            "score": 0.7494,
+            "section": "FORM HO-0304 - EDITION 06-22",
+            "snippet": "Superseded by edition 06-22 with effect from 1 June 2022.\n\nFORM HO-0304 - EDITION 06-22\nEXCLUSION CODE E-17 - SEQUENTIAL WATER INTRUSION EVENTS (EDITION 06-22)\n"
+          }
+        ],
+        "hit": false,
+        "median_latency_ms": 7.555
+      },
+      {
+        "id": "H2",
+        "question": "Under form HO-0304 edition 01-22, what's the day-count trigger for exclusion E-17?",
+        "hard_token": "form_edition",
+        "gold_chunk_id": "bccb1c5b9d0662a7::0001",
+        "top3": [
+          {
+            "chunk_id": "bccb1c5b9d0662a7::0002",
+            "score": 0.5504,
+            "section": "FORM HO-0304 - EDITION 06-22",
+            "snippet": "Superseded by edition 06-22 with effect from 1 June 2022.\n\nFORM HO-0304 - EDITION 06-22\nEXCLUSION CODE E-17 - SEQUENTIAL WATER INTRUSION EVENTS (EDITION 06-22)\n"
+          },
+          {
+            "chunk_id": "bccb1c5b9d0662a7::0004",
+            "score": 0.5375,
+            "section": "FORM HO-0304 - EDITION 01-24",
+            "snippet": "Superseded by edition 01-24 with effect from 1 January 2024.\n\nFORM HO-0304 - EDITION 01-24\nEXCLUSION CODE E-17 - SEQUENTIAL WATER INTRUSION EVENTS (EDITION 01-2"
+          },
+          {
+            "chunk_id": "bccb1c5b9d0662a7::0003",
+            "score": 0.5226,
+            "section": "FORM HO-0304 - EDITION 09-23",
+            "snippet": "Superseded by edition 09-23 with effect from 1 September 2023.\n\nFORM HO-0304 - EDITION 09-23\nEXCLUSION CODE E-17 - SEQUENTIAL WATER INTRUSION EVENTS (EDITION 09"
+          }
+        ],
+        "hit": false,
+        "median_latency_ms": 7.238
+      },
+      {
+        "id": "H3",
+        "question": "What's the endorsement reference number for the E-17 sequential water intrusion exclusion?",
+        "hard_token": "reference_number",
+        "gold_chunk_id": "399904d5d2107b14::0021",
+        "top3": [
+          {
+            "chunk_id": "399904d5d2107b14::0022",
+            "score": 0.7047,
+            "section": "ENDORSEMENT NO. 4 - SEQUENTIAL WATER INTRUSION EXCLUSION > 4.3 Exclusion Code E-17 - Sequential Water Intrusion Events",
+            "snippet": "at clause 4.3 below, which supersedes and replaces any earlier edition of Form HO-0304 referenced in the Insured's document file.\n\n4.3 Exclusion Code E-17 - Seq"
+          },
+          {
+            "chunk_id": "bccb1c5b9d0662a7::0002",
+            "score": 0.6958,
+            "section": "FORM HO-0304 - EDITION 06-22",
+            "snippet": "Superseded by edition 06-22 with effect from 1 June 2022.\n\nFORM HO-0304 - EDITION 06-22\nEXCLUSION CODE E-17 - SEQUENTIAL WATER INTRUSION EVENTS (EDITION 06-22)\n"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0023",
+            "score": 0.6845,
+            "section": "ENDORSEMENT NO. 4 - SEQUENTIAL WATER INTRUSION EXCLUSION > 4.4 Interaction with the Flood Defence Condition",
+            "snippet": "This exclusion applies in addition to, and does not narrow, the deductible and sub-limit provisions of clauses 2 and 3 above.\n\n4.4 Interaction with the Flood De"
+          }
+        ],
+        "hit": false,
+        "median_latency_ms": 7.027
+      },
+      {
+        "id": "H4",
+        "question": "What is the policy number shown on this endorsement pack?",
+        "hard_token": "policy_number",
+        "gold_chunk_id": "399904d5d2107b14::0000",
+        "top3": [
+          {
+            "chunk_id": "399904d5d2107b14::0000",
+            "score": 0.5747,
+            "section": "GLOBAL MANUFACTURING LTD",
+            "snippet": "GLOBAL MANUFACTURING LTD\n\nCOMMERCIAL PROPERTY AND LIABILITY ENDORSEMENT PACK\nPolicy Number GML-2024-88213. Period of Insurance: 1 April 2024 to 31 March 2025, b"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0021",
+            "score": 0.4955,
+            "section": "ENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS > GENERAL CONDITIONS > 3.",
+            "snippet": "in accordance with the law of England and Wales, and the parties submit to the exclusive jurisdiction of the courts of England and Wales.\n\n3. Premium payment. T"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0013",
+            "score": 0.4866,
+            "section": "ENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION > SECTION 2 - EXCLUSION WORDING > 2.",
+            "snippet": "conforming to any recognised standard including ISO 27001 or the National Institute of Standards and Technology Cybersecurity Framework;\n(e) any regulatory inve"
+          }
+        ],
+        "hit": true,
+        "median_latency_ms": 6.485
+      },
+      {
+        "id": "H5",
+        "question": "Under form HO-0304 edition 09-23, what's the day-count trigger for exclusion E-17?",
+        "hard_token": "form_edition",
+        "gold_chunk_id": "bccb1c5b9d0662a7::0003",
+        "top3": [
+          {
+            "chunk_id": "bccb1c5b9d0662a7::0002",
+            "score": 0.5488,
+            "section": "FORM HO-0304 - EDITION 06-22",
+            "snippet": "Superseded by edition 06-22 with effect from 1 June 2022.\n\nFORM HO-0304 - EDITION 06-22\nEXCLUSION CODE E-17 - SEQUENTIAL WATER INTRUSION EVENTS (EDITION 06-22)\n"
+          },
+          {
+            "chunk_id": "bccb1c5b9d0662a7::0004",
+            "score": 0.5352,
+            "section": "FORM HO-0304 - EDITION 01-24",
+            "snippet": "Superseded by edition 01-24 with effect from 1 January 2024.\n\nFORM HO-0304 - EDITION 01-24\nEXCLUSION CODE E-17 - SEQUENTIAL WATER INTRUSION EVENTS (EDITION 01-2"
+          },
+          {
+            "chunk_id": "bccb1c5b9d0662a7::0003",
+            "score": 0.5222,
+            "section": "FORM HO-0304 - EDITION 09-23",
+            "snippet": "Superseded by edition 09-23 with effect from 1 September 2023.\n\nFORM HO-0304 - EDITION 09-23\nEXCLUSION CODE E-17 - SEQUENTIAL WATER INTRUSION EVENTS (EDITION 09"
+          }
+        ],
+        "hit": true,
+        "median_latency_ms": 6.723
+      },
+      {
+        "id": "S1",
+        "question": "What did the flood sub-limit get bumped up to in the annual aggregate?",
+        "hard_token": null,
+        "gold_chunk_id": "399904d5d2107b14::0002",
+        "top3": [
+          {
+            "chunk_id": "399904d5d2107b14::0002",
+            "score": 0.6046,
+            "section": "ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > 2. AMENDMENT TO LIMIT",
+            "snippet": "means any location identified as Zone 2 or Zone 3 on the Environment Agency Flood Map for Planning current at the inception of this endorsement.\n\n2. AMENDMENT T"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0005",
+            "score": 0.5559,
+            "section": "ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > SECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT > 4.2 Exclusions",
+            "snippet": "(a) subsidence, ground heave or landslip, whether or not caused or contributed to by Flood; (b) loss of or damage to growing crops, standing timber, or livestoc"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0006",
+            "score": 0.5266,
+            "section": "ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > SECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT > 4.2 Exclusions > 4.2.1 Erosion of the sub-limit",
+            "snippet": "(e) any fine, penalty or punitive damages levied by a regulator following a Flood event.\n\n4.2.1 Erosion of the sub-limit\nEach payment made under this endorsemen"
+          }
+        ],
+        "hit": true,
+        "median_latency_ms": 6.648
+      },
+      {
+        "id": "S2",
+        "question": "What deductible applies if a flood loss happens inside a flood zone?",
+        "hard_token": null,
+        "gold_chunk_id": "399904d5d2107b14::0003",
+        "top3": [
+          {
+            "chunk_id": "399904d5d2107b14::0003",
+            "score": 0.6546,
+            "section": "ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > 3. DEDUCTIBLE",
+            "snippet": "to all insured locations combined and is part of, and not in addition to, the policy limit of GBP 40,000,000 any one occurrence.\n\n3. DEDUCTIBLE\nA deductible of "
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0004",
+            "score": 0.628,
+            "section": "ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > SECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT",
+            "snippet": "the standard property deductible of GBP 50,000 each and every loss continues to apply.\n\nSECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT\n\n4.1 Flood Defence M"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0002",
+            "score": 0.5481,
+            "section": "ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > 2. AMENDMENT TO LIMIT",
+            "snippet": "means any location identified as Zone 2 or Zone 3 on the Environment Agency Flood Map for Planning current at the inception of this endorsement.\n\n2. AMENDMENT T"
+          }
+        ],
+        "hit": true,
+        "median_latency_ms": 6.582
+      },
+      {
+        "id": "S3",
+        "question": "How long is the waiting period on the business interruption section?",
+        "hard_token": null,
+        "gold_chunk_id": "399904d5d2107b14::0018",
+        "top3": [
+          {
+            "chunk_id": "399904d5d2107b14::0018",
+            "score": 0.7632,
+            "section": "ENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS > 1. WAITING PERIOD",
+            "snippet": "The Business Interruption section is amended as set out below. All other terms, conditions and exclusions remain unaltered.\n\n1. WAITING PERIOD\nA waiting period "
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0019",
+            "score": 0.5964,
+            "section": "ENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS > 2. INDEMNITY PERIOD",
+            "snippet": "2. INDEMNITY PERIOD\nThe maximum indemnity period is extended from 12 months to 18 months from the date on which the interruption begins.\n\n3. NOTIFICATION OF CLA"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0020",
+            "score": 0.463,
+            "section": "ENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS > GENERAL CONDITIONS",
+            "snippet": "Notice given to the broker alone does not constitute notice to the Insurer.\n\nGENERAL CONDITIONS\n\n1. Cancellation. Either party may cancel this policy by giving "
+          }
+        ],
+        "hit": true,
+        "median_latency_ms": 6.306
+      },
+      {
+        "id": "S4",
+        "question": "How much written notice do we need to give to cancel the policy?",
+        "hard_token": null,
+        "gold_chunk_id": "399904d5d2107b14::0020",
+        "top3": [
+          {
+            "chunk_id": "399904d5d2107b14::0020",
+            "score": 0.6361,
+            "section": "ENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS > GENERAL CONDITIONS",
+            "snippet": "Notice given to the broker alone does not constitute notice to the Insurer.\n\nGENERAL CONDITIONS\n\n1. Cancellation. Either party may cancel this policy by giving "
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0021",
+            "score": 0.5214,
+            "section": "ENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS > GENERAL CONDITIONS > 3.",
+            "snippet": "in accordance with the law of England and Wales, and the parties submit to the exclusive jurisdiction of the courts of England and Wales.\n\n3. Premium payment. T"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0006",
+            "score": 0.4709,
+            "section": "ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > SECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT > 4.2 Exclusions > 4.2.1 Erosion of the sub-limit",
+            "snippet": "(e) any fine, penalty or punitive damages levied by a regulator following a Flood event.\n\n4.2.1 Erosion of the sub-limit\nEach payment made under this endorsemen"
+          }
+        ],
+        "hit": true,
+        "median_latency_ms": 6.18
+      },
+      {
+        "id": "S5",
+        "question": "How often does the insured need to test their flood barriers and sump pumps?",
+        "hard_token": null,
+        "gold_chunk_id": "399904d5d2107b14::0004",
+        "top3": [
+          {
+            "chunk_id": "399904d5d2107b14::0004",
+            "score": 0.6189,
+            "section": "ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > SECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT",
+            "snippet": "the standard property deductible of GBP 50,000 each and every loss continues to apply.\n\nSECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT\n\n4.1 Flood Defence M"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0023",
+            "score": 0.6019,
+            "section": "ENDORSEMENT NO. 4 - SEQUENTIAL WATER INTRUSION EXCLUSION > 4.4 Interaction with the Flood Defence Condition",
+            "snippet": "This exclusion applies in addition to, and does not narrow, the deductible and sub-limit provisions of clauses 2 and 3 above.\n\n4.4 Interaction with the Flood De"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0022",
+            "score": 0.5039,
+            "section": "ENDORSEMENT NO. 4 - SEQUENTIAL WATER INTRUSION EXCLUSION > 4.3 Exclusion Code E-17 - Sequential Water Intrusion Events",
+            "snippet": "at clause 4.3 below, which supersedes and replaces any earlier edition of Form HO-0304 referenced in the Insured's document file.\n\n4.3 Exclusion Code E-17 - Seq"
+          }
+        ],
+        "hit": true,
+        "median_latency_ms": 6.807
+      },
+      {
+        "id": "S6",
+        "question": "Does the cyber exclusion write back cover for fire damage?",
+        "hard_token": null,
+        "gold_chunk_id": "399904d5d2107b14::0017",
+        "top3": [
+          {
+            "chunk_id": "399904d5d2107b14::0017",
+            "score": 0.6453,
+            "section": "ENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION > SECTION 3 - WRITE-BACK FOR PHYSICAL DAMAGE",
+            "snippet": "and whether or not the Insured had performed pre-engagement screening on that person.\n\nSECTION 3 - WRITE-BACK FOR PHYSICAL DAMAGE\n\n3. Subject to all other terms"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0016",
+            "score": 0.5552,
+            "section": "ENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION > SECTION 2 - EXCLUSION WORDING > 2.",
+            "snippet": "security, availability or integrity of any Computer System or Data, whether that contract was entered into by the Insured as supplier or as customer;\n(h) the de"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0011",
+            "score": 0.5226,
+            "section": "ENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION > SECTION 2 - EXCLUSION WORDING > 2.",
+            "snippet": "from source documents where those documents themselves remain undamaged, and including any loss of profit consequent upon such loss of use;\n(c) the failure, mal"
+          }
+        ],
+        "hit": true,
+        "median_latency_ms": 6.833
+      },
+      {
+        "id": "S7",
+        "question": "How many days do we have to notify a business interruption claim?",
+        "hard_token": null,
+        "gold_chunk_id": "399904d5d2107b14::0019",
+        "top3": [
+          {
+            "chunk_id": "399904d5d2107b14::0018",
+            "score": 0.7312,
+            "section": "ENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS > 1. WAITING PERIOD",
+            "snippet": "The Business Interruption section is amended as set out below. All other terms, conditions and exclusions remain unaltered.\n\n1. WAITING PERIOD\nA waiting period "
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0019",
+            "score": 0.6869,
+            "section": "ENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS > 2. INDEMNITY PERIOD",
+            "snippet": "2. INDEMNITY PERIOD\nThe maximum indemnity period is extended from 12 months to 18 months from the date on which the interruption begins.\n\n3. NOTIFICATION OF CLA"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0020",
+            "score": 0.5938,
+            "section": "ENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS > GENERAL CONDITIONS",
+            "snippet": "Notice given to the broker alone does not constitute notice to the Insurer.\n\nGENERAL CONDITIONS\n\n1. Cancellation. Either party may cancel this policy by giving "
+          }
+        ],
+        "hit": true,
+        "median_latency_ms": 6.256
+      }
+    ]
+  },
+  "hybrid_bm25_rrf": {
+    "mode": "hybrid_bm25_rrf",
+    "mmr_lambda": null,
+    "hit_rate_at_3": 1.0,
+    "hits": 12,
+    "total": 12,
+    "p50_latency_ms": 6.645,
+    "per_question": [
+      {
+        "id": "H1",
+        "question": "Does exclusion E-17 apply under form HO-0304 ed. 03-24? Second flood at the same site, six weeks after the first.",
+        "hard_token": "exclusion_code",
+        "gold_chunk_id": "399904d5d2107b14::0022",
+        "top3": [
+          {
+            "chunk_id": "bccb1c5b9d0662a7::0004",
+            "score": 0.0328,
+            "section": "FORM HO-0304 - EDITION 01-24",
+            "snippet": "Superseded by edition 01-24 with effect from 1 January 2024.\n\nFORM HO-0304 - EDITION 01-24\nEXCLUSION CODE E-17 - SEQUENTIAL WATER INTRUSION EVENTS (EDITION 01-2"
+          },
+          {
+            "chunk_id": "bccb1c5b9d0662a7::0003",
+            "score": 0.0318,
+            "section": "FORM HO-0304 - EDITION 09-23",
+            "snippet": "Superseded by edition 09-23 with effect from 1 September 2023.\n\nFORM HO-0304 - EDITION 09-23\nEXCLUSION CODE E-17 - SEQUENTIAL WATER INTRUSION EVENTS (EDITION 09"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0022",
+            "score": 0.0318,
+            "section": "ENDORSEMENT NO. 4 - SEQUENTIAL WATER INTRUSION EXCLUSION > 4.3 Exclusion Code E-17 - Sequential Water Intrusion Events",
+            "snippet": "at clause 4.3 below, which supersedes and replaces any earlier edition of Form HO-0304 referenced in the Insured's document file.\n\n4.3 Exclusion Code E-17 - Seq"
+          }
+        ],
+        "hit": true,
+        "median_latency_ms": 6.65
+      },
+      {
+        "id": "H2",
+        "question": "Under form HO-0304 edition 01-22, what's the day-count trigger for exclusion E-17?",
+        "hard_token": "form_edition",
+        "gold_chunk_id": "bccb1c5b9d0662a7::0001",
+        "top3": [
+          {
+            "chunk_id": "bccb1c5b9d0662a7::0002",
+            "score": 0.0323,
+            "section": "FORM HO-0304 - EDITION 06-22",
+            "snippet": "Superseded by edition 06-22 with effect from 1 June 2022.\n\nFORM HO-0304 - EDITION 06-22\nEXCLUSION CODE E-17 - SEQUENTIAL WATER INTRUSION EVENTS (EDITION 06-22)\n"
+          },
+          {
+            "chunk_id": "bccb1c5b9d0662a7::0001",
+            "score": 0.032,
+            "section": "FORM HO-0304 - EDITION 01-22",
+            "snippet": "Earlier editions below are retained for reference only and do not apply to a loss occurring after the date their text says they were superseded.\n\nFORM HO-0304 -"
+          },
+          {
+            "chunk_id": "bccb1c5b9d0662a7::0004",
+            "score": 0.0315,
+            "section": "FORM HO-0304 - EDITION 01-24",
+            "snippet": "Superseded by edition 01-24 with effect from 1 January 2024.\n\nFORM HO-0304 - EDITION 01-24\nEXCLUSION CODE E-17 - SEQUENTIAL WATER INTRUSION EVENTS (EDITION 01-2"
+          }
+        ],
+        "hit": true,
+        "median_latency_ms": 8.029
+      },
+      {
+        "id": "H3",
+        "question": "What's the endorsement reference number for the E-17 sequential water intrusion exclusion?",
+        "hard_token": "reference_number",
+        "gold_chunk_id": "399904d5d2107b14::0021",
+        "top3": [
+          {
+            "chunk_id": "399904d5d2107b14::0022",
+            "score": 0.0325,
+            "section": "ENDORSEMENT NO. 4 - SEQUENTIAL WATER INTRUSION EXCLUSION > 4.3 Exclusion Code E-17 - Sequential Water Intrusion Events",
+            "snippet": "at clause 4.3 below, which supersedes and replaces any earlier edition of Form HO-0304 referenced in the Insured's document file.\n\n4.3 Exclusion Code E-17 - Seq"
+          },
+          {
+            "chunk_id": "bccb1c5b9d0662a7::0002",
+            "score": 0.0315,
+            "section": "FORM HO-0304 - EDITION 06-22",
+            "snippet": "Superseded by edition 06-22 with effect from 1 June 2022.\n\nFORM HO-0304 - EDITION 06-22\nEXCLUSION CODE E-17 - SEQUENTIAL WATER INTRUSION EVENTS (EDITION 06-22)\n"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0021",
+            "score": 0.0313,
+            "section": "ENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS > GENERAL CONDITIONS > 3.",
+            "snippet": "in accordance with the law of England and Wales, and the parties submit to the exclusive jurisdiction of the courts of England and Wales.\n\n3. Premium payment. T"
+          }
+        ],
+        "hit": true,
+        "median_latency_ms": 9.011
+      },
+      {
+        "id": "H4",
+        "question": "What is the policy number shown on this endorsement pack?",
+        "hard_token": "policy_number",
+        "gold_chunk_id": "399904d5d2107b14::0000",
+        "top3": [
+          {
+            "chunk_id": "399904d5d2107b14::0000",
+            "score": 0.0328,
+            "section": "GLOBAL MANUFACTURING LTD",
+            "snippet": "GLOBAL MANUFACTURING LTD\n\nCOMMERCIAL PROPERTY AND LIABILITY ENDORSEMENT PACK\nPolicy Number GML-2024-88213. Period of Insurance: 1 April 2024 to 31 March 2025, b"
+          },
+          {
+            "chunk_id": "bccb1c5b9d0662a7::0000",
+            "score": 0.0315,
+            "section": "FORM LIBRARY - ARCHIVED WORDING ON FILE",
+            "snippet": "FORM LIBRARY - ARCHIVED WORDING ON FILE\nThis file retains prior editions of Form HO-0304 for audit and reference purposes against policy GML-2024-88213. The edi"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0007",
+            "score": 0.0315,
+            "section": "ENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION > SECTION 1 - SCOPE OF THE EXCLUSION",
+            "snippet": "endorsement applies to every section of the policy and replaces any cyber exclusion previously attached.\n\nSECTION 1 - SCOPE OF THE EXCLUSION\n\n1. This exclusion "
+          }
+        ],
+        "hit": true,
+        "median_latency_ms": 7.859
+      },
+      {
+        "id": "H5",
+        "question": "Under form HO-0304 edition 09-23, what's the day-count trigger for exclusion E-17?",
+        "hard_token": "form_edition",
+        "gold_chunk_id": "bccb1c5b9d0662a7::0003",
+        "top3": [
+          {
+            "chunk_id": "bccb1c5b9d0662a7::0002",
+            "score": 0.0325,
+            "section": "FORM HO-0304 - EDITION 06-22",
+            "snippet": "Superseded by edition 06-22 with effect from 1 June 2022.\n\nFORM HO-0304 - EDITION 06-22\nEXCLUSION CODE E-17 - SEQUENTIAL WATER INTRUSION EVENTS (EDITION 06-22)\n"
+          },
+          {
+            "chunk_id": "bccb1c5b9d0662a7::0003",
+            "score": 0.0323,
+            "section": "FORM HO-0304 - EDITION 09-23",
+            "snippet": "Superseded by edition 09-23 with effect from 1 September 2023.\n\nFORM HO-0304 - EDITION 09-23\nEXCLUSION CODE E-17 - SEQUENTIAL WATER INTRUSION EVENTS (EDITION 09"
+          },
+          {
+            "chunk_id": "bccb1c5b9d0662a7::0004",
+            "score": 0.0318,
+            "section": "FORM HO-0304 - EDITION 01-24",
+            "snippet": "Superseded by edition 01-24 with effect from 1 January 2024.\n\nFORM HO-0304 - EDITION 01-24\nEXCLUSION CODE E-17 - SEQUENTIAL WATER INTRUSION EVENTS (EDITION 01-2"
+          }
+        ],
+        "hit": true,
+        "median_latency_ms": 7.171
+      },
+      {
+        "id": "S1",
+        "question": "What did the flood sub-limit get bumped up to in the annual aggregate?",
+        "hard_token": null,
+        "gold_chunk_id": "399904d5d2107b14::0002",
+        "top3": [
+          {
+            "chunk_id": "399904d5d2107b14::0002",
+            "score": 0.0325,
+            "section": "ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > 2. AMENDMENT TO LIMIT",
+            "snippet": "means any location identified as Zone 2 or Zone 3 on the Environment Agency Flood Map for Planning current at the inception of this endorsement.\n\n2. AMENDMENT T"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0006",
+            "score": 0.0323,
+            "section": "ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > SECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT > 4.2 Exclusions > 4.2.1 Erosion of the sub-limit",
+            "snippet": "(e) any fine, penalty or punitive damages levied by a regulator following a Flood event.\n\n4.2.1 Erosion of the sub-limit\nEach payment made under this endorsemen"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0023",
+            "score": 0.0313,
+            "section": "ENDORSEMENT NO. 4 - SEQUENTIAL WATER INTRUSION EXCLUSION > 4.4 Interaction with the Flood Defence Condition",
+            "snippet": "This exclusion applies in addition to, and does not narrow, the deductible and sub-limit provisions of clauses 2 and 3 above.\n\n4.4 Interaction with the Flood De"
+          }
+        ],
+        "hit": true,
+        "median_latency_ms": 6.782
+      },
+      {
+        "id": "S2",
+        "question": "What deductible applies if a flood loss happens inside a flood zone?",
+        "hard_token": null,
+        "gold_chunk_id": "399904d5d2107b14::0003",
+        "top3": [
+          {
+            "chunk_id": "399904d5d2107b14::0003",
+            "score": 0.0325,
+            "section": "ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > 3. DEDUCTIBLE",
+            "snippet": "to all insured locations combined and is part of, and not in addition to, the policy limit of GBP 40,000,000 any one occurrence.\n\n3. DEDUCTIBLE\nA deductible of "
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0002",
+            "score": 0.0323,
+            "section": "ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > 2. AMENDMENT TO LIMIT",
+            "snippet": "means any location identified as Zone 2 or Zone 3 on the Environment Agency Flood Map for Planning current at the inception of this endorsement.\n\n2. AMENDMENT T"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0001",
+            "score": 0.0315,
+            "section": "ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > 1. DEFINITIONS",
+            "snippet": "of the additional premium of GBP 42,750 the following amendments are made to the Property Damage section of the policy.\n\n1. DEFINITIONS\n\n1.1 Flood means the esc"
+          }
+        ],
+        "hit": true,
+        "median_latency_ms": 6.639
+      },
+      {
+        "id": "S3",
+        "question": "How long is the waiting period on the business interruption section?",
+        "hard_token": null,
+        "gold_chunk_id": "399904d5d2107b14::0018",
+        "top3": [
+          {
+            "chunk_id": "399904d5d2107b14::0018",
+            "score": 0.0328,
+            "section": "ENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS > 1. WAITING PERIOD",
+            "snippet": "The Business Interruption section is amended as set out below. All other terms, conditions and exclusions remain unaltered.\n\n1. WAITING PERIOD\nA waiting period "
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0019",
+            "score": 0.032,
+            "section": "ENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS > 2. INDEMNITY PERIOD",
+            "snippet": "2. INDEMNITY PERIOD\nThe maximum indemnity period is extended from 12 months to 18 months from the date on which the interruption begins.\n\n3. NOTIFICATION OF CLA"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0017",
+            "score": 0.0318,
+            "section": "ENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION > SECTION 3 - WRITE-BACK FOR PHYSICAL DAMAGE",
+            "snippet": "and whether or not the Insured had performed pre-engagement screening on that person.\n\nSECTION 3 - WRITE-BACK FOR PHYSICAL DAMAGE\n\n3. Subject to all other terms"
+          }
+        ],
+        "hit": true,
+        "median_latency_ms": 5.794
+      },
+      {
+        "id": "S4",
+        "question": "How much written notice do we need to give to cancel the policy?",
+        "hard_token": null,
+        "gold_chunk_id": "399904d5d2107b14::0020",
+        "top3": [
+          {
+            "chunk_id": "399904d5d2107b14::0020",
+            "score": 0.0325,
+            "section": "ENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS > GENERAL CONDITIONS",
+            "snippet": "Notice given to the broker alone does not constitute notice to the Insurer.\n\nGENERAL CONDITIONS\n\n1. Cancellation. Either party may cancel this policy by giving "
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0019",
+            "score": 0.032,
+            "section": "ENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS > 2. INDEMNITY PERIOD",
+            "snippet": "2. INDEMNITY PERIOD\nThe maximum indemnity period is extended from 12 months to 18 months from the date on which the interruption begins.\n\n3. NOTIFICATION OF CLA"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0021",
+            "score": 0.0318,
+            "section": "ENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS > GENERAL CONDITIONS > 3.",
+            "snippet": "in accordance with the law of England and Wales, and the parties submit to the exclusive jurisdiction of the courts of England and Wales.\n\n3. Premium payment. T"
+          }
+        ],
+        "hit": true,
+        "median_latency_ms": 6.119
+      },
+      {
+        "id": "S5",
+        "question": "How often does the insured need to test their flood barriers and sump pumps?",
+        "hard_token": null,
+        "gold_chunk_id": "399904d5d2107b14::0004",
+        "top3": [
+          {
+            "chunk_id": "399904d5d2107b14::0004",
+            "score": 0.0328,
+            "section": "ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > SECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT",
+            "snippet": "the standard property deductible of GBP 50,000 each and every loss continues to apply.\n\nSECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT\n\n4.1 Flood Defence M"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0023",
+            "score": 0.0323,
+            "section": "ENDORSEMENT NO. 4 - SEQUENTIAL WATER INTRUSION EXCLUSION > 4.4 Interaction with the Flood Defence Condition",
+            "snippet": "This exclusion applies in addition to, and does not narrow, the deductible and sub-limit provisions of clauses 2 and 3 above.\n\n4.4 Interaction with the Flood De"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0022",
+            "score": 0.031,
+            "section": "ENDORSEMENT NO. 4 - SEQUENTIAL WATER INTRUSION EXCLUSION > 4.3 Exclusion Code E-17 - Sequential Water Intrusion Events",
+            "snippet": "at clause 4.3 below, which supersedes and replaces any earlier edition of Form HO-0304 referenced in the Insured's document file.\n\n4.3 Exclusion Code E-17 - Seq"
+          }
+        ],
+        "hit": true,
+        "median_latency_ms": 6.26
+      },
+      {
+        "id": "S6",
+        "question": "Does the cyber exclusion write back cover for fire damage?",
+        "hard_token": null,
+        "gold_chunk_id": "399904d5d2107b14::0017",
+        "top3": [
+          {
+            "chunk_id": "399904d5d2107b14::0017",
+            "score": 0.0328,
+            "section": "ENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION > SECTION 3 - WRITE-BACK FOR PHYSICAL DAMAGE",
+            "snippet": "and whether or not the Insured had performed pre-engagement screening on that person.\n\nSECTION 3 - WRITE-BACK FOR PHYSICAL DAMAGE\n\n3. Subject to all other terms"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0009",
+            "score": 0.0315,
+            "section": "ENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION > SECTION 2 - EXCLUSION WORDING > 2.",
+            "snippet": "in connection with any of the following, regardless of any other cause or event contributing concurrently or in any other sequence thereto:\n(a) any Cyber Act or"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0007",
+            "score": 0.0308,
+            "section": "ENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION > SECTION 1 - SCOPE OF THE EXCLUSION",
+            "snippet": "endorsement applies to every section of the policy and replaces any cyber exclusion previously attached.\n\nSECTION 1 - SCOPE OF THE EXCLUSION\n\n1. This exclusion "
+          }
+        ],
+        "hit": true,
+        "median_latency_ms": 5.797
+      },
+      {
+        "id": "S7",
+        "question": "How many days do we have to notify a business interruption claim?",
+        "hard_token": null,
+        "gold_chunk_id": "399904d5d2107b14::0019",
+        "top3": [
+          {
+            "chunk_id": "399904d5d2107b14::0018",
+            "score": 0.0328,
+            "section": "ENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS > 1. WAITING PERIOD",
+            "snippet": "The Business Interruption section is amended as set out below. All other terms, conditions and exclusions remain unaltered.\n\n1. WAITING PERIOD\nA waiting period "
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0019",
+            "score": 0.032,
+            "section": "ENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS > 2. INDEMNITY PERIOD",
+            "snippet": "2. INDEMNITY PERIOD\nThe maximum indemnity period is extended from 12 months to 18 months from the date on which the interruption begins.\n\n3. NOTIFICATION OF CLA"
+          },
+          {
+            "chunk_id": "399904d5d2107b14::0017",
+            "score": 0.0318,
+            "section": "ENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION > SECTION 3 - WRITE-BACK FOR PHYSICAL DAMAGE",
+            "snippet": "and whether or not the Insured had performed pre-engagement screening on that person.\n\nSECTION 3 - WRITE-BACK FOR PHYSICAL DAMAGE\n\n3. Subject to all other terms"
+          }
+        ],
+        "hit": true,
+        "median_latency_ms": 6.738
+      }
+    ]
+  },
+  "mmr_bonus_h1": {
+    "None": {
+      "top3": [
+        "bccb1c5b9d0662a7::0004",
+        "bccb1c5b9d0662a7::0003",
+        "399904d5d2107b14::0022"
+      ],
+      "diversity": 0.4,
+      "hit": true
+    },
+    "0.7": {
+      "top3": [
+        "bccb1c5b9d0662a7::0004",
+        "399904d5d2107b14::0023",
+        "399904d5d2107b14::0022"
+      ],
+      "diversity": 0.642,
+      "hit": true
+    },
+    "0.5": {
+      "top3": [
+        "bccb1c5b9d0662a7::0004",
+        "399904d5d2107b14::0018",
+        "399904d5d2107b14::0023"
+      ],
+      "diversity": 0.862,
+      "hit": false
+    },
+    "0.3": {
+      "top3": [
+        "bccb1c5b9d0662a7::0004",
+        "399904d5d2107b14::0014",
+        "399904d5d2107b14::0018"
+      ],
+      "diversity": 0.914,
+      "hit": false
+    }
+  }
+}

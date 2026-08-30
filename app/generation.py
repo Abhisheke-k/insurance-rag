@@ -24,6 +24,7 @@ import re
 from typing import Any, Sequence
 
 from app.config import Settings
+from app.llm import LLMProvider, LLMUnavailableError, build_llm_provider
 from app.models import Citation, GeneratedAnswer, RetrievedChunk
 
 logger = logging.getLogger(__name__)
@@ -91,7 +92,7 @@ ANSWER_SCHEMA: dict[str, Any] = {
 
 
 class GenerationUnavailableError(RuntimeError):
-    """Raised when Claude cannot be reached or is not configured."""
+    """Raised when the configured LLM backend cannot be reached or is not configured."""
 
 
 def build_context_block(retrieved: Sequence[RetrievedChunk]) -> str:
@@ -163,78 +164,56 @@ def _extract_json(text: str) -> dict[str, Any] | None:
 
 
 class AnswerGenerator:
-    """Wraps a single Claude call plus the citation-resolution guard rails."""
+    """Wraps a single LLM call plus the citation-resolution guard rails.
 
-    def __init__(self, settings: Settings) -> None:
+    The call itself is delegated to an injected :class:`~app.llm.LLMProvider`
+    (Anthropic, OpenAI, or the deterministic stub -- see :mod:`app.llm`); this
+    class owns only the parts that do not vary by backend: prompt assembly and
+    citation verification.
+    """
+
+    def __init__(self, settings: Settings, *, provider: LLMProvider | None = None) -> None:
         self._settings = settings
-        self._client: Any | None = None
-        self._init_error: str | None = None
-        self._supports_structured_output = True
-
-        try:
-            import anthropic  # noqa: PLC0415 -- optional at import time
-
-            self._anthropic = anthropic
-            self._client = (
-                anthropic.Anthropic(api_key=settings.anthropic_api_key)
-                if settings.anthropic_api_key
-                else anthropic.Anthropic()
-            )
-        except ImportError as exc:
-            self._anthropic = None
-            self._init_error = f"the 'anthropic' package is not installed ({exc})"
-        except Exception as exc:  # pragma: no cover - depends on SDK version
-            self._init_error = (
-                "no Anthropic credentials found. Set ANTHROPIC_API_KEY, or run "
-                f"`ant auth login` ({exc})"
-            )
-
-        if self._client is not None and not self._has_credentials():
-            # The SDK resolves credentials lazily: a bare Anthropic() constructs
-            # happily with no key and only fails when the first request builds
-            # its headers. Detect that now so /health reports it honestly rather
-            # than promising a generation backend that will 500 on first use.
-            self._init_error = (
-                "no Anthropic credentials found. Set ANTHROPIC_API_KEY (or ANTHROPIC_AUTH_TOKEN, "
-                "or run `ant auth login`) to enable answer generation."
-            )
-
-    def _has_credentials(self) -> bool:
-        return any(
-            getattr(self._client, attribute, None)
-            for attribute in ("api_key", "auth_token", "credentials")
-        )
+        self._provider = provider or build_llm_provider(settings)
 
     # ------------------------------------------------------------------ #
     @property
     def is_configured(self) -> bool:
-        return self._client is not None and self._init_error is None
+        return self._provider.is_configured()
 
     def status(self) -> dict[str, Any]:
+        provider_status = self._provider.status()
         return {
-            "configured": self.is_configured,
-            "model": self._settings.answer_model,
+            "configured": provider_status["configured"],
+            "model": provider_status["model"],
             "effort": self._settings.answer_effort,
-            "error": self._init_error,
+            "error": provider_status["error"],
         }
 
     # ------------------------------------------------------------------ #
     def generate(self, question: str, retrieved: Sequence[RetrievedChunk]) -> GeneratedAnswer:
-        """Ask Claude the question against ``retrieved``, then verify citations."""
+        """Ask the model the question against ``retrieved``, then verify citations."""
         if not retrieved:
             return not_found_answer(notes=["no passages were retrieved"])
 
         if not self.is_configured:
             raise GenerationUnavailableError(
-                self._init_error or "Claude is not configured for this deployment"
+                self._provider.status()["error"] or "the LLM backend is not configured for this deployment"
             )
 
-        response = self._call_model(_build_user_message(question, retrieved))
+        try:
+            response = self._provider.complete(
+                system=SYSTEM_PROMPT,
+                user_message=_build_user_message(question, retrieved),
+                json_schema=ANSWER_SCHEMA,
+                max_tokens=self._settings.answer_max_tokens,
+                effort=self._settings.answer_effort,
+            )
+        except LLMUnavailableError as exc:
+            raise GenerationUnavailableError(str(exc)) from exc
 
-        if getattr(response, "stop_reason", None) == "refusal":
-            details = getattr(response, "stop_details", None)
-            category = getattr(details, "category", None) if details else None
-            logger.warning("Claude declined the request (category=%s)", category)
+        if response.stop_reason == "refusal":
+            logger.warning("the model declined the request (category=%s)", response.refusal_category)
             return GeneratedAnswer(
                 answer=(
                     "The model declined to answer this request. Rephrase the question, "
@@ -243,67 +222,21 @@ class AnswerGenerator:
                 found=False,
                 citations=[],
                 chunks_used=len(retrieved),
-                model=getattr(response, "model", None),
+                model=response.model,
                 stop_reason="refusal",
-                notes=[f"refusal category: {category}"] if category else [],
+                notes=[f"refusal category: {response.refusal_category}"] if response.refusal_category else [],
             )
 
-        text = "".join(
-            block.text for block in response.content if getattr(block, "type", None) == "text"
-        )
-        payload = _extract_json(text)
+        payload = _extract_json(response.text)
         notes: list[str] = []
 
         if payload is None:
-            if getattr(response, "stop_reason", None) == "max_tokens":
+            if response.stop_reason == "max_tokens":
                 notes.append("response hit max_tokens before completing")
             logger.error("could not parse a JSON answer from the model response")
             return not_found_answer(chunks_used=len(retrieved), notes=notes + ["unparseable model response"])
 
         return self._verify(payload, retrieved, response, notes)
-
-    # ------------------------------------------------------------------ #
-    def _call_model(self, user_message: str) -> Any:
-        settings = self._settings
-        output_config: dict[str, Any] = {"effort": settings.answer_effort}
-        if self._supports_structured_output:
-            output_config["format"] = {"type": "json_schema", "schema": ANSWER_SCHEMA}
-
-        request: dict[str, Any] = {
-            "model": settings.answer_model,
-            "max_tokens": settings.answer_max_tokens,
-            "system": SYSTEM_PROMPT,
-            "output_config": output_config,
-            "messages": [{"role": "user", "content": user_message}],
-        }
-        if not self._supports_structured_output:
-            request["messages"][0]["content"] += (
-                '\n\nReply with a single JSON object and nothing else: '
-                '{"found": bool, "answer": string, "citations": [int, ...]}'
-            )
-
-        try:
-            return self._client.messages.create(**request)
-        except self._anthropic.BadRequestError as exc:
-            # Older API/SDK combinations may reject output_config.format. Retry
-            # once with prompt-level JSON instructions instead of failing.
-            if self._supports_structured_output and "output_config" in str(exc):
-                logger.warning("structured outputs rejected (%s); retrying with prompted JSON", exc)
-                self._supports_structured_output = False
-                return self._call_model(user_message)
-            raise GenerationUnavailableError(f"Claude rejected the request: {exc}") from exc
-        except self._anthropic.AuthenticationError as exc:
-            raise GenerationUnavailableError(f"Anthropic authentication failed: {exc}") from exc
-        except self._anthropic.RateLimitError as exc:
-            raise GenerationUnavailableError(f"Anthropic rate limit reached: {exc}") from exc
-        except self._anthropic.APIConnectionError as exc:
-            raise GenerationUnavailableError(f"could not reach the Anthropic API: {exc}") from exc
-        except self._anthropic.APIStatusError as exc:
-            raise GenerationUnavailableError(f"Anthropic API error {exc.status_code}: {exc}") from exc
-        except TypeError as exc:
-            # The SDK raises a bare TypeError when it cannot resolve credentials
-            # while building request headers. Surface it as 503, not 500.
-            raise GenerationUnavailableError(f"Anthropic client is not usable: {exc}") from exc
 
     # ------------------------------------------------------------------ #
     def _verify(
