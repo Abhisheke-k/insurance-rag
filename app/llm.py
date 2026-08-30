@@ -379,7 +379,7 @@ class StubProvider(LLMProvider):
     ) -> LLMResponse:
         properties = set((json_schema or {}).get("properties", {}).keys())
         if "pass_criterion" in properties:
-            payload = self._judge(user_message)
+            payload = self._judge(system, user_message)
         elif "coverage_decision" in properties:
             payload = self._summarize_claim(user_message)
         elif "found" in properties and "citations" in properties:
@@ -507,13 +507,34 @@ class StubProvider(LLMProvider):
     # ------------------------------------------------------------------ #
     # Persona 3: judge (matches app.judge.JUDGE_SCHEMA)
     # ------------------------------------------------------------------ #
-    def _judge(self, user_message: str) -> dict[str, Any]:
-        # A deliberately weaker reader than the summariser: it only checks that the
-        # summary's coverage_decision agrees with whether the cited passage carries a
-        # negation cue, and does not independently re-derive the answer from the notes.
-        # That asymmetry is what Week 6 is supposed to surface as judge/human disagreement.
+    #: v2's prompt (coursework/w6/judge_v2.txt) adds this instruction, in these
+    #: words, after the two disagreement examples. Its presence is how the stub
+    #: "learns" the lesson those examples teach -- a real model would pick it up
+    #: from the instruction and the few-shot pair together; the stub has no
+    #: weights to update, so it keys off the sentence a v2 prompt actually
+    #: contains. This is a simulation detail specific to the stub, not a
+    #: contract the real Anthropic/OpenAI providers need to know about.
+    _TOPICAL_CHECK_MARKER = "same clause topic"
+
+    #: Topic vocabularies used only by the (optional) topical-relevance check
+    #: below -- a cheap stand-in for "is the cited passage even about the same
+    #: kind of claim as the notes", which a pure negation-cue check cannot see.
+    _TOPIC_MARKERS = {
+        "cyber": ["cyber", "computer system", "ransom", "malicious", "hacking", "encrypt", "cryptocurrency"],
+        "flood_sublimit": ["sub-limit", "annual aggregate"],
+        "business_interruption": ["waiting period", "indemnity period"],
+    }
+
+    def _judge(self, system: str, user_message: str) -> dict[str, Any]:
+        # v1: checks only that the summary's coverage_decision agrees with whether
+        # the cited passage carries a negation cue -- it never independently
+        # re-derives the answer from the notes, and it cannot tell a correctly-
+        # negated WRONG clause from a correctly-negated RIGHT one. That blind spot
+        # is what Week 6's judge/human disagreement is built to surface.
+        notes_match = re.search(r"<adjuster_notes>\n(.*?)\n</adjuster_notes>", user_message, re.DOTALL)
         summary_match = re.search(r"<claim_summary>\n(.*?)\n</claim_summary>", user_message, re.DOTALL)
         context_match = re.search(r"<policy_context>\n(.*?)\n</policy_context>", user_message, re.DOTALL)
+        notes = notes_match.group(1).strip() if notes_match else ""
         summary_json = summary_match.group(1).strip() if summary_match else "{}"
         try:
             summary = json.loads(summary_json)
@@ -526,17 +547,34 @@ class StubProvider(LLMProvider):
         decision = summary.get("coverage_decision")
 
         plausible = bool(cited) and bool(str(summary.get("summary", "")).strip())
-        agrees_with_context = not (has_negation and decision == "covered") and not (
+        polarity_ok = not (has_negation and decision == "covered") and not (
             not has_negation and decision == "denied" and cited_bodies
         )
-        pass_criterion = plausible and agrees_with_context
-        rationale = (
-            "cited passage(s) support the stated coverage decision"
-            if pass_criterion
-            else "cited passage(s) contain a negation/exclusion cue that conflicts with the stated decision"
-            if not agrees_with_context
-            else "summary lacks a citation or a summary sentence to check"
-        )
+
+        # v2 only: does the cited passage even belong to the same topic as the
+        # notes? Catches "right polarity, wrong clause" (e.g. a flood sub-limit
+        # question denied on the cyber exclusion, which IS negatively worded).
+        topical_ok = True
+        topical_reason = ""
+        if self._TOPICAL_CHECK_MARKER in system.lower() and notes:
+            notes_lower = cited_bodies and notes.lower()
+            for topic, markers in self._TOPIC_MARKERS.items():
+                passage_has_topic = any(m in cited_bodies.lower() for m in markers)
+                notes_has_topic = any(m in notes_lower for m in markers)
+                if passage_has_topic and not notes_has_topic:
+                    topical_ok = False
+                    topical_reason = f"cited passage is about {topic!r} but the notes never mention it"
+                    break
+
+        pass_criterion = plausible and polarity_ok and topical_ok
+        if not plausible:
+            rationale = "summary lacks a citation or a summary sentence to check"
+        elif not polarity_ok:
+            rationale = "cited passage(s) contain a negation/exclusion cue that conflicts with the stated decision"
+        elif not topical_ok:
+            rationale = topical_reason
+        else:
+            rationale = "cited passage(s) support the stated coverage decision"
         return {"pass_criterion": pass_criterion, "rationale": rationale}
 
 
