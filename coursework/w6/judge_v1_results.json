@@ -1,0 +1,231 @@
+{
+  "prompt": "coursework\\w6\\judge_v1.txt",
+  "agreement": 0.32,
+  "results": [
+    {
+      "id": "gen_bi_exceeds_indemnity_period_0",
+      "mode": "verdict_inversion",
+      "human": false,
+      "judge": false,
+      "agree": true,
+      "judge_rationale": "cited passage(s) contain a negation/exclusion cue that conflicts with the stated decision",
+      "human_reason": "cited clause caps the indemnity period at 18 months; a 20-month interruption is not cleanly 'covered' by that clause -- it exceeds the cap the clause states."
+    },
+    {
+      "id": "gen_bi_past_waiting_period_0",
+      "mode": "off_topic_citation",
+      "human": false,
+      "judge": true,
+      "agree": false,
+      "judge_rationale": "cited passage(s) support the stated coverage decision",
+      "human_reason": "cited passage is the flood sub-limit/policy-limit paragraph, unrelated to business interruption."
+    },
+    {
+      "id": "gen_exclusion_subsidence_0",
+      "mode": "mislabel",
+      "human": true,
+      "judge": true,
+      "agree": true,
+      "judge_rationale": "cited passage(s) support the stated coverage decision",
+      "human_reason": "cited passage contains exclusion (a) subsidence contributed to by flood, matching the notes; denial is supported."
+    },
+    {
+      "id": "gen_exclusion_regulatory_fine_0",
+      "mode": "control",
+      "human": false,
+      "judge": true,
+      "agree": false,
+      "judge_rationale": "cited passage(s) support the stated coverage decision",
+      "human_reason": "cited passage is generic flood-zone definitions; it never reaches exclusion (e) (regulatory fine), so it does not establish coverage for a penalty notice."
+    },
+    {
+      "id": "gen_bi_within_waiting_period_0",
+      "mode": "verdict_inversion",
+      "human": true,
+      "judge": true,
+      "agree": true,
+      "judge_rationale": "cited passage(s) support the stated coverage decision",
+      "human_reason": "64 hours is within the 72-hour waiting period; the cited clause explicitly says no indemnity is payable within it, so 'denied' is supported (the mislabeled exclusion id 'h' is a separate, assertion-level issue, not part of this criterion)."
+    },
+    {
+      "id": "gen_e17_within_window_0",
+      "mode": "verdict_inversion",
+      "human": false,
+      "judge": true,
+      "agree": false,
+      "judge_rationale": "cited passage(s) support the stated coverage decision",
+      "human_reason": "cited passage is the archived form library covering editions 01-22/06-22/09-23; the applicable edition on file (03-24, 60-day trigger) is never cited, so the passage does not establish the correct rule was applied."
+    },
+    {
+      "id": "gen_e17_within_window_1",
+      "mode": "verdict_inversion",
+      "human": false,
+      "judge": true,
+      "agree": false,
+      "judge_rationale": "cited passage(s) support the stated coverage decision",
+      "human_reason": "same as above -- wrong (archived) editions cited, applicable 03-24 rule absent."
+    },
+    {
+      "id": "gen_stock_raised_covered_0",
+      "mode": "control",
+      "human": true,
+      "judge": false,
+      "agree": false,
+      "judge_rationale": "cited passage(s) contain a negation/exclusion cue that conflicts with the stated decision",
+      "human_reason": "cited exclusion (d) carves out stock raised >=150mm; notes say stock was raised 200mm, so the passage's own wording supports 'covered'."
+    },
+    {
+      "id": "gen_out_of_corpus_0",
+      "mode": "control",
+      "human": false,
+      "judge": true,
+      "agree": false,
+      "judge_rationale": "cited passage(s) support the stated coverage decision",
+      "human_reason": "cited passage is the flood endorsement's premium paragraph; nothing in it addresses a motor vehicle collision."
+    },
+    {
+      "id": "gen_sublimit_erosion_0",
+      "mode": "off_topic_citation",
+      "human": false,
+      "judge": true,
+      "agree": false,
+      "judge_rationale": "cited passage(s) support the stated coverage decision",
+      "human_reason": "summary's stated rationale quotes the cyber Cyber-Act exclusion, which has nothing to do with a flood sub-limit question; the sub-limit erosion text in the same chunk isn't even applicable since GBP 1.3M is well under the GBP 5,000,000 aggregate."
+    },
+    {
+      "id": "gen_sublimit_erosion_1",
+      "mode": "off_topic_citation",
+      "human": false,
+      "judge": true,
+      "agree": false,
+      "judge_rationale": "cited passage(s) support the stated coverage decision",
+      "human_reason": "same as above."
+    },
+    {
+      "id": "gen_exclusion_livestock_0",
+      "mode": "mislabel",
+      "human": true,
+      "judge": true,
+      "agree": true,
+      "judge_rationale": "cited passage(s) support the stated coverage decision",
+      "human_reason": "cited passage contains exclusion (b) standing timber/livestock in the open, matching the notes exactly."
+    },
+    {
+      "id": "gen_exclusion_stock_floor_0",
+      "mode": "verdict_inversion",
+      "human": false,
+      "judge": false,
+      "agree": true,
+      "judge_rationale": "cited passage(s) contain a negation/exclusion cue that conflicts with the stated decision",
+      "human_reason": "notes say stock was NOT raised; cited exclusion (d) applies and should deny, but the decision is 'covered' -- passage contradicts the decision."
+    },
+    {
+      "id": "gen_exclusion_stock_floor_1",
+      "mode": "verdict_inversion",
+      "human": true,
+      "judge": true,
+      "agree": true,
+      "judge_rationale": "cited passage(s) support the stated coverage decision",
+      "human_reason": "notes say stock was not raised; exclusion (d) applies; 'denied' is supported."
+    },
+    {
+      "id": "gen_flood_in_zone_covered_0",
+      "mode": "verdict_inversion",
+      "human": false,
+      "judge": true,
+      "agree": false,
+      "judge_rationale": "cited passage(s) support the stated coverage decision",
+      "human_reason": "cited passage is the DEDUCTIBLE clause, which is not an exclusion -- it does not support 'denied' for an otherwise-uncomplicated in-zone flood claim."
+    },
+    {
+      "id": "gen_flood_in_zone_covered_1",
+      "mode": "verdict_inversion",
+      "human": false,
+      "judge": true,
+      "agree": false,
+      "judge_rationale": "cited passage(s) support the stated coverage decision",
+      "human_reason": "same as above."
+    },
+    {
+      "id": "gen_cyber_cloud_outage_0",
+      "mode": "verdict_inversion",
+      "human": false,
+      "judge": true,
+      "agree": false,
+      "judge_rationale": "cited passage(s) support the stated coverage decision",
+      "human_reason": "cited exclusion (c) explicitly excludes third-party computer-system/cloud-host failure, the exact scenario in the notes -- it does not support 'covered'."
+    },
+    {
+      "id": "gen_cyber_fire_writeback_0",
+      "mode": "verdict_inversion",
+      "human": false,
+      "judge": true,
+      "agree": false,
+      "judge_rationale": "cited passage(s) support the stated coverage decision",
+      "human_reason": "notes state no evidence of intent; cited write-back clause says the exclusion does NOT apply in that circumstance -- it supports 'covered', not the stated 'denied'."
+    },
+    {
+      "id": "gen_construction_under_threshold_0",
+      "mode": "mislabel",
+      "human": false,
+      "judge": true,
+      "agree": false,
+      "judge_rationale": "cited passage(s) support the stated coverage decision",
+      "human_reason": "notes state contract value GBP 838,298, below the GBP 1,000,000 threshold named in the cited exclusion (c) -- on the passage's own terms the exclusion does not apply, so it does not support 'denied'."
+    },
+    {
+      "id": "gen_bi_late_notification_0",
+      "mode": "off_topic_citation",
+      "human": false,
+      "judge": false,
+      "agree": true,
+      "judge_rationale": "cited passage(s) contain a negation/exclusion cue that conflicts with the stated decision",
+      "human_reason": "cited passages (employee-intent cyber clause, notification-deadline clause) state a deadline was missed but establish no basis for 'covered' either way."
+    },
+    {
+      "id": "gen_flood_outside_zone_0",
+      "mode": "deductible_misapplied",
+      "human": true,
+      "judge": true,
+      "agree": true,
+      "judge_rationale": "cited passage(s) support the stated coverage decision",
+      "human_reason": "on the narrow question of coverage_decision (not the excess amount, which is a separate assertion-level error), the cited deductible clause establishes this is an insured, deductible-bearing peril -- consistent with 'covered'."
+    },
+    {
+      "id": "gen_flood_defence_untested_0",
+      "mode": "control",
+      "human": false,
+      "judge": true,
+      "agree": false,
+      "judge_rationale": "cited passage(s) support the stated coverage decision",
+      "human_reason": "notes describe an untested-condition question with no second flood event at all; the cited passage is exclusion E-17, which governs repeat floods -- it does not address the question asked."
+    },
+    {
+      "id": "gen_cyber_ransomware_0",
+      "mode": "verdict_inversion",
+      "human": false,
+      "judge": true,
+      "agree": false,
+      "judge_rationale": "cited passage(s) support the stated coverage decision",
+      "human_reason": "cited exclusion (f) explicitly excludes ransom/extortion payments, the exact scenario in the notes -- does not support 'covered'."
+    },
+    {
+      "id": "gen_cyber_ransomware_1",
+      "mode": "verdict_inversion",
+      "human": false,
+      "judge": true,
+      "agree": false,
+      "judge_rationale": "cited passage(s) support the stated coverage decision",
+      "human_reason": "same as above."
+    },
+    {
+      "id": "gen_e17_defence_carveout_0",
+      "mode": "verdict_inversion",
+      "human": false,
+      "judge": true,
+      "agree": false,
+      "judge_rationale": "cited passage(s) support the stated coverage decision",
+      "human_reason": "notes state barriers were tested 20 days prior, within the carve-out window; the cited passage (clause 4.4) itself says the exclusion does NOT apply in that circumstance -- it supports 'covered', not the stated 'denied'."
+    }
+  ]
+}

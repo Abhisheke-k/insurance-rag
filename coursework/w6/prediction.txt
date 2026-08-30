@@ -1,0 +1,34 @@
+Week 6 prediction — written before iterating the judge prompt (v1 -> v2).
+
+v1 agreement with blind human labels: 8/25 = 32% (coursework/w6/judge_v1_results.json).
+17 disagreements, 16 of them the judge saying PASS when the human said FAIL.
+
+Reading the disagreements: v1 checks the whole cited chunk for a fixed list of
+negation phrases ("does not cover", "excludes", ...). Two distinct blind spots
+show up repeatedly:
+
+1. A cited passage that quotes an enumerated exclusion item verbatim (e.g.
+   "(f) any extortion demand, ransom payment...") carries no literal negation
+   phrase in that specific fragment -- the governing "this policy excludes..."
+   sentence lives in an earlier chunk (the clause is long enough to have been
+   split by the chunker). v1 sees no cue word and passes it.
+2. A cited passage that IS negatively worded but is a CARVE-OUT ("Exclusion
+   Code E-17 does not apply where...") gets treated the same as a primary
+   exclusion ("does not cover...") by v1's single undifferentiated cue list --
+   both contain "not", but a carve-out restores cover rather than removing it.
+
+Prediction: rewriting the judge to (a) read the model's own stated rationale
+sentence specifically, rather than the whole cited chunk, (b) recognize a
+quoted lettered exclusion item ("(a)"-"(h)") as an implicit exclusion even
+with no cue word in view, and (c) distinguish carve-out language from primary
+exclusion language, will raise agreement from 32% (8/25) to 70%+ on the same
+25 cases.
+
+What I expect it will NOT fix: cases where the cited passage is topically
+unrelated to the notes but still contains legitimate exclusion phrasing
+somewhere in the wider chunk (e.g. a flood sub-limit question answered from
+the cyber exclusion's chunk, which genuinely does say "excludes"). That needs
+the separate topical-relevance check also added in v2 -- I expect it to help
+those specific cases but not to be as reliable as the polarity fix, since its
+topic-marker vocabulary is a short, hand-picked list rather than genuine
+topic understanding.

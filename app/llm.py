@@ -317,6 +317,21 @@ def _parse_passages(block: str) -> list[tuple[int, str, str]]:
     return [(int(num), header.strip(), body.strip()) for num, header, body in _PASSAGE_RE.findall(block)]
 
 
+_CHUNK_ID_IN_HEADER_RE = re.compile(r"chunk_id:\s*(\S+)")
+
+
+def _passages_by_chunk_id(block: str) -> dict[str, str]:
+    """Map chunk_id -> body text, keyed the way ``ClaimSummary.citations`` actually
+    stores citations (chunk_id strings, not passage numbers). ``build_context_block``
+    prints ``chunk_id: <id>`` in every passage header, so it's always recoverable."""
+    result: dict[str, str] = {}
+    for _num, header, body in _parse_passages(block):
+        match = _CHUNK_ID_IN_HEADER_RE.search(header)
+        if match:
+            result[match.group(1)] = body
+    return result
+
+
 def _best_sentence(body: str, wanted: set[str]) -> str:
     sentences = re.split(r"(?<=[.;])\s+", body)
     if not sentences:
@@ -519,18 +534,47 @@ class StubProvider(LLMProvider):
     #: Topic vocabularies used only by the (optional) topical-relevance check
     #: below -- a cheap stand-in for "is the cited passage even about the same
     #: kind of claim as the notes", which a pure negation-cue check cannot see.
-    _TOPIC_MARKERS = {
-        "cyber": ["cyber", "computer system", "ransom", "malicious", "hacking", "encrypt", "cryptocurrency"],
-        "flood_sublimit": ["sub-limit", "annual aggregate"],
-        "business_interruption": ["waiting period", "indemnity period"],
+    #: Separate word lists for the passage side (policy jargon) and the notes
+    #: side (how a claim in that category actually gets described) -- a first
+    #: pass used one shared list and produced false positives whenever the
+    #: notes described the situation without repeating the clause's own
+    #: wording (e.g. "production interruption" never says "waiting period").
+    _TOPIC_MARKERS: dict[str, dict[str, tuple[str, ...]]] = {
+        "cyber": {
+            "passage": ("cyber", "computer system", "ransom", "malicious code", "hacking", "cryptocurrency"),
+            "notes": ("cyber", "ransomware", "hack", "malicious", "computer", "cloud", "encrypt", "data"),
+        },
+        "flood_sublimit": {
+            "passage": ("sub-limit", "annual aggregate"),
+            "notes": ("flood", "sub-limit", "aggregate"),
+        },
+        "business_interruption": {
+            "passage": ("waiting period", "indemnity period"),
+            "notes": ("interruption", "business interruption", "lost revenue", "lost sales", "outage"),
+        },
     }
+
+    #: A clause that DENIES coverage.
+    _PRIMARY_EXCLUSION_CUES = ("does not cover", "excludes", "shall not be liable", "not liable", "no indemnity", "not cover")
+    #: A clause that switches a primary exclusion back OFF (a write-back / carve-out)
+    #: -- also negatively worded, but the opposite implication for coverage. v1
+    #: does not know this distinction exists; that is its main blind spot.
+    _CARVEOUT_CUES = ("does not apply", "shall not apply")
+    #: This corpus enumerates exclusion items as "(a) ... (h)"; a rationale that
+    #: quotes one verbatim is quoting an exclusion even with no cue word in view.
+    #: Not anchored to the start: the stub's own rationale text is templated as
+    #: "Notes match an insured peril: (f) any extortion demand ...", so the
+    #: lettered item is a few words in, not at position zero.
+    _LETTERED_ITEM_RE = re.compile(r"\(([a-h])\)\s+\S")
 
     def _judge(self, system: str, user_message: str) -> dict[str, Any]:
         # v1: checks only that the summary's coverage_decision agrees with whether
-        # the cited passage carries a negation cue -- it never independently
-        # re-derives the answer from the notes, and it cannot tell a correctly-
-        # negated WRONG clause from a correctly-negated RIGHT one. That blind spot
-        # is what Week 6's judge/human disagreement is built to surface.
+        # the CITED PASSAGE carries a negation cue -- it never independently
+        # re-derives the answer from the notes, cannot tell a correctly-negated
+        # WRONG clause from a correctly-negated RIGHT one, and treats any
+        # negative-sounding clause as a denial even when it is actually a
+        # carve-out restoring cover. Those blind spots are what Week 6's
+        # judge/human disagreement is built to surface.
         notes_match = re.search(r"<adjuster_notes>\n(.*?)\n</adjuster_notes>", user_message, re.DOTALL)
         summary_match = re.search(r"<claim_summary>\n(.*?)\n</claim_summary>", user_message, re.DOTALL)
         context_match = re.search(r"<policy_context>\n(.*?)\n</policy_context>", user_message, re.DOTALL)
@@ -540,27 +584,59 @@ class StubProvider(LLMProvider):
             summary = json.loads(summary_json)
         except ValueError:
             summary = {}
-        passages = _parse_passages(context_match.group(1)) if context_match else []
-        cited = summary.get("citations") or []
-        cited_bodies = " ".join(body for num, _header, body in passages if num in cited)
-        has_negation = any(cue in cited_bodies.lower() for cue in _NEGATION_CUES)
+        by_chunk_id = _passages_by_chunk_id(context_match.group(1)) if context_match else {}
+        cited_ids = summary.get("citations") or []
+        cited_bodies = " ".join(by_chunk_id[cid] for cid in cited_ids if cid in by_chunk_id)
         decision = summary.get("coverage_decision")
+        rationale_text = str(summary.get("summary", ""))
 
-        plausible = bool(cited) and bool(str(summary.get("summary", "")).strip())
-        polarity_ok = not (has_negation and decision == "covered") and not (
-            not has_negation and decision == "denied" and cited_bodies
-        )
+        plausible = bool(cited_ids) and bool(rationale_text.strip())
+        v2_active = self._TOPICAL_CHECK_MARKER in system.lower()
+
+        if not v2_active:
+            has_negation = any(cue in cited_bodies.lower() for cue in _NEGATION_CUES)
+            polarity_ok = not (has_negation and decision == "covered") and not (
+                not has_negation and decision == "denied" and cited_bodies
+            )
+            polarity_reason = "cited passage(s) contain a negation/exclusion cue that conflicts with the stated decision"
+        else:
+            # v2: read the MODEL'S OWN STATED RATIONALE, not the whole cited chunk
+            # (which routinely contains other, unrelated clauses packed alongside
+            # the one actually relied on) -- and distinguish a primary exclusion
+            # from a carve-out that restores cover instead of collapsing both into
+            # one "has a negative word" bucket.
+            check_text = rationale_text.lower().strip()
+            has_primary = any(cue in check_text for cue in self._PRIMARY_EXCLUSION_CUES) or bool(
+                self._LETTERED_ITEM_RE.search(rationale_text)
+            )
+            has_carveout = (not has_primary) and any(cue in check_text for cue in self._CARVEOUT_CUES)
+            if has_carveout:
+                polarity_ok = decision != "denied"
+                polarity_reason = "the quoted rationale is a carve-out (the exclusion 'does not apply') -- that supports 'covered', not 'denied'"
+            elif has_primary:
+                polarity_ok = decision != "covered"
+                polarity_reason = "the quoted rationale is an exclusion item -- that supports 'denied', not 'covered'"
+            else:
+                polarity_ok = True
+                polarity_reason = ""
 
         # v2 only: does the cited passage even belong to the same topic as the
         # notes? Catches "right polarity, wrong clause" (e.g. a flood sub-limit
         # question denied on the cyber exclusion, which IS negatively worded).
         topical_ok = True
         topical_reason = ""
-        if self._TOPICAL_CHECK_MARKER in system.lower() and notes:
-            notes_lower = cited_bodies and notes.lower()
-            for topic, markers in self._TOPIC_MARKERS.items():
-                passage_has_topic = any(m in cited_bodies.lower() for m in markers)
-                notes_has_topic = any(m in notes_lower for m in markers)
+        if v2_active and notes:
+            # Checked against the RATIONALE, not the whole cited chunk, for the same
+            # reason as the polarity check above: one retrieved chunk in this corpus
+            # routinely packs several unrelated clauses together (e.g. a cyber
+            # write-back paragraph sitting right next to the business-interruption
+            # waiting-period clause), and the wider chunk's topic mix is not what is
+            # actually being relied on -- only the quoted sentence is.
+            notes_lower = notes.lower()
+            rationale_lower = rationale_text.lower()
+            for topic, sides in self._TOPIC_MARKERS.items():
+                passage_has_topic = any(m in rationale_lower for m in sides["passage"])
+                notes_has_topic = any(m in notes_lower for m in sides["notes"])
                 if passage_has_topic and not notes_has_topic:
                     topical_ok = False
                     topical_reason = f"cited passage is about {topic!r} but the notes never mention it"
@@ -570,7 +646,7 @@ class StubProvider(LLMProvider):
         if not plausible:
             rationale = "summary lacks a citation or a summary sentence to check"
         elif not polarity_ok:
-            rationale = "cited passage(s) contain a negation/exclusion cue that conflicts with the stated decision"
+            rationale = polarity_reason
         elif not topical_ok:
             rationale = topical_reason
         else:
