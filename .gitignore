@@ -15,6 +15,7 @@ chroma_db/
 data/*.pdf
 .chunk-comparison/
 .chroma_check/
+.w7-race/
 .tmp/
 .eval_scratch/
 

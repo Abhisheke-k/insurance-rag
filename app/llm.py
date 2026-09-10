@@ -317,6 +317,19 @@ def _parse_passages(block: str) -> list[tuple[int, str, str]]:
     return [(int(num), header.strip(), body.strip()) for num, header, body in _PASSAGE_RE.findall(block)]
 
 
+#: Bounds each search_policy step's <observation>...</observation> body exactly,
+#: so a later check_assertions/finalize step's text (also in the scratchpad the
+#: agent turn persona re-parses each call) can never bleed into a passage body.
+_SEARCH_STEP_RE = re.compile(
+    r'<step number="\d+" action="search_policy">.*?<observation>\n(.*?)\n</observation>', re.DOTALL
+)
+
+
+def _search_observations(scratchpad: str) -> str:
+    """Concatenate just the search_policy observations out of an agent scratchpad."""
+    return "\n\n".join(_SEARCH_STEP_RE.findall(scratchpad))
+
+
 _CHUNK_ID_IN_HEADER_RE = re.compile(r"chunk_id:\s*(\S+)")
 
 
@@ -364,6 +377,63 @@ def _score_passages(passages: Sequence[tuple[int, str, str]], question: str) -> 
     return sorted(scored, key=lambda p: p.score, reverse=True)
 
 
+def _infer_claim_fields(notes: str, scored: Sequence[_ScoredPassage]) -> dict[str, Any]:
+    """Read a claim number/date/decision/exclusion/excess/summary off ``notes``
+    and the best-matching passage. Shared by Persona 2 (claim summary) and
+    Persona 3 (agent turn) -- the agent's version just runs this again each
+    turn against whatever passages its own searches have surfaced so far."""
+    claim_number_match = re.search(r"\bCLM-\d{4}-\d{5}\b", notes)
+    claim_number = claim_number_match.group(0) if claim_number_match else "UNKNOWN"
+
+    date_match = re.search(
+        r"\b(\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|"
+        r"November|December)\s+\d{4}|\d{4}-\d{2}-\d{2})\b",
+        notes,
+    )
+    date_of_loss = date_match.group(0) if date_match else ""
+
+    top = scored[0] if scored and scored[0].score > 0 else None
+    excess_amount: float | None = None
+    cited_exclusion_id: str | None = None
+    citations: list[int] = []
+    coverage_decision = "needs_review"
+    summary_bits: list[str] = []
+
+    if top is not None:
+        citations.append(top.number)
+        excess_pattern = r"deductible of GBP\s?([\d,]+)|excess of GBP\s?([\d,]+)"
+        excess_search = re.search(excess_pattern, top.body, re.IGNORECASE)
+        if excess_search:
+            raw = next(g for g in excess_search.groups() if g)
+            excess_amount = float(raw.replace(",", ""))
+
+        has_negation = any(cue in top.body.lower() for cue in _NEGATION_CUES)
+        clause_id_match = re.search(r"\(([a-h])\)|(\d\.\d(?:\.\d)?)", top.header + " " + top.body)
+        best = _best_sentence(top.body, _content_tokens(notes))
+
+        if has_negation:
+            coverage_decision = "denied"
+            if clause_id_match:
+                cited_exclusion_id = clause_id_match.group(1) or clause_id_match.group(2)
+            summary_bits.append(f"Notes describe an excluded scenario: {best}")
+        else:
+            coverage_decision = "covered"
+            summary_bits.append(f"Notes match an insured peril: {best}")
+    else:
+        summary_bits.append("No policy passage in context matches the notes' circumstances.")
+
+    summary = " ".join(summary_bits) or "Unable to determine coverage from the notes and context."
+    return {
+        "claim_number": claim_number,
+        "date_of_loss": date_of_loss,
+        "coverage_decision": coverage_decision,
+        "cited_exclusion_id": cited_exclusion_id,
+        "excess_amount": excess_amount,
+        "summary": summary,
+        "citations": citations,
+    }
+
+
 class StubProvider(LLMProvider):
     """Deterministic reading-comprehension simulator. No network call, ever.
 
@@ -395,6 +465,8 @@ class StubProvider(LLMProvider):
         properties = set((json_schema or {}).get("properties", {}).keys())
         if "pass_criterion" in properties:
             payload = self._judge(system, user_message)
+        elif "action" in properties and "thought" in properties:
+            payload = self._agent_turn(user_message)
         elif "coverage_decision" in properties:
             payload = self._summarize_claim(user_message)
         elif "found" in properties and "citations" in properties:
@@ -456,71 +528,89 @@ class StubProvider(LLMProvider):
         notes = notes_match.group(1).strip() if notes_match else user_message
         passages = _parse_passages(context_match.group(1)) if context_match else []
 
-        claim_number_match = re.search(r"\bCLM-\d{4}-\d{5}\b", notes)
-        claim_number = claim_number_match.group(0) if claim_number_match else "UNKNOWN"
-
-        date_match = re.search(
-            r"\b(\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|"
-            r"November|December)\s+\d{4}|\d{4}-\d{2}-\d{2})\b",
-            notes,
-        )
-        date_of_loss = date_match.group(0) if date_match else ""
-
-        amount_match = re.search(r"GBP\s?([\d,]+(?:\.\d{2})?)", notes)
-        claimed_amount = float(amount_match.group(1).replace(",", "")) if amount_match else None
-
         scored = _score_passages(passages, notes)
         bucket = _seed(notes)
+        fields = _infer_claim_fields(notes, scored)
         top = scored[0] if scored and scored[0].score > 0 else None
 
-        excess_amount: float | None = None
-        cited_exclusion_id: str | None = None
-        citations: list[int] = []
-        coverage_decision = "needs_review"
-        summary_bits: list[str] = []
-
+        # Deterministic G-failure: flips the coverage read on notes that DO carry a
+        # negation cue in the matched clause -- same "right context, wrong conclusion"
+        # pattern as the Q&A stub, tuned to a different, independent hash band.
         if top is not None:
-            citations.append(top.number)
-            excess_search = re.search(r"deductible of GBP\s?([\d,]+)|excess of GBP\s?([\d,]+)", top.body, re.IGNORECASE)
-            if excess_search:
-                raw = next(g for g in excess_search.groups() if g)
-                excess_amount = float(raw.replace(",", ""))
-
             has_negation = any(cue in top.body.lower() for cue in _NEGATION_CUES)
-            clause_id_match = re.search(r"\(([a-h])\)|(\d\.\d(?:\.\d)?)", top.header + " " + top.body)
-
-            if has_negation:
-                coverage_decision = "denied"
-                if clause_id_match:
-                    cited_exclusion_id = clause_id_match.group(1) or clause_id_match.group(2)
-                summary_bits.append(f"Notes describe circumstances matching an excluded scenario: {_best_sentence(top.body, _content_tokens(notes))}")
-            else:
-                coverage_decision = "covered"
-                summary_bits.append(f"Notes match an insured peril: {_best_sentence(top.body, _content_tokens(notes))}")
-
-            # Deterministic G-failure: flips the coverage read on notes that DO carry a
-            # negation cue in the matched clause -- same "right context, wrong conclusion"
-            # pattern as the Q&A stub, tuned to a different, independent hash band.
             if has_negation and 40 <= bucket < 55:
-                coverage_decision = "covered"
-                cited_exclusion_id = None
-                summary_bits[-1] = f"Notes match an insured peril: {_best_sentence(top.body, _content_tokens(notes))}"
-        else:
-            summary_bits.append("No policy passage in context matches the circumstances described in the notes.")
+                best = _best_sentence(top.body, _content_tokens(notes))
+                fields["coverage_decision"] = "covered"
+                fields["cited_exclusion_id"] = None
+                fields["summary"] = f"Notes match an insured peril: {best}"
 
-        summary = " ".join(summary_bits) or "Unable to determine coverage from the supplied notes and context."
+        return fields
+
+    # ------------------------------------------------------------------ #
+    # Persona 3: agent turn (matches app.agent.AGENT_STEP_SCHEMA)
+    #
+    # Stateless like every stub call, so "what step am I on" is read back out
+    # of the scratchpad the loop re-sends each turn rather than tracked here:
+    # search once, draft + check assertions once, then finalize. No injected
+    # failure modes -- the interesting difference to observe against Persona 2
+    # is the agent's architecture (re-search, self-check), not a second copy
+    # of the same seeded imperfection.
+    # ------------------------------------------------------------------ #
+    def _agent_turn(self, user_message: str) -> dict[str, Any]:
+        notes_pattern = r"<adjuster_notes>\n(.*?)\n</adjuster_notes>"
+        notes_match = re.search(notes_pattern, user_message, re.DOTALL)
+        scratchpad_match = re.search(r"<scratchpad>\n(.*?)\n</scratchpad>", user_message, re.DOTALL)
+        notes = notes_match.group(1).strip() if notes_match else user_message
+        scratchpad = scratchpad_match.group(1) if scratchpad_match else ""
+
+        blank = {
+            "draft_claim_number": None,
+            "draft_date_of_loss": None,
+            "draft_coverage_decision": None,
+            "draft_cited_exclusion_id": None,
+            "draft_excess_amount": None,
+            "draft_summary": None,
+            "draft_citations": [],
+        }
+
+        if 'action="search_policy"' not in scratchpad:
+            return {
+                "thought": "search the policy corpus for the circumstances in the notes",
+                "action": "search_policy",
+                "search_query": notes[:200],
+                **blank,
+            }
+
+        passages = _parse_passages(_search_observations(scratchpad))
+        scored = _score_passages(passages, notes)
+        fields = _infer_claim_fields(notes, scored)
+        draft = {
+            "draft_claim_number": fields["claim_number"],
+            "draft_date_of_loss": fields["date_of_loss"],
+            "draft_coverage_decision": fields["coverage_decision"],
+            "draft_cited_exclusion_id": fields["cited_exclusion_id"],
+            "draft_excess_amount": fields["excess_amount"],
+            "draft_summary": fields["summary"],
+            "draft_citations": fields["citations"],
+        }
+
+        if 'action="check_assertions"' not in scratchpad:
+            return {
+                "thought": "check the draft against the deterministic assertions before finalizing",
+                "action": "check_assertions",
+                "search_query": None,
+                **draft,
+            }
+
         return {
-            "claim_number": claim_number,
-            "date_of_loss": date_of_loss,
-            "coverage_decision": coverage_decision,
-            "cited_exclusion_id": cited_exclusion_id,
-            "excess_amount": excess_amount,
-            "summary": summary,
-            "citations": citations,
+            "thought": "assertions checked; finalize",
+            "action": "finalize",
+            "search_query": None,
+            **draft,
         }
 
     # ------------------------------------------------------------------ #
-    # Persona 3: judge (matches app.judge.JUDGE_SCHEMA)
+    # Persona 4: judge (matches app.judge.JUDGE_SCHEMA)
     # ------------------------------------------------------------------ #
     #: v2's prompt (coursework/w6/judge_v2.txt) adds this instruction, in these
     #: words, after the two disagreement examples. Its presence is how the stub

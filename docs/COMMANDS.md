@@ -111,6 +111,14 @@ curl.exe -s -X POST http://127.0.0.1:8000/ask -H "Content-Type: application/json
 
 # delete a document (doc_id comes from /documents or /ingest)
 curl.exe -s -X DELETE http://127.0.0.1:8000/documents/77e34963221c7200
+
+# summarise a claim -- one retrieve, one LLM call (needs ANTHROPIC_API_KEY; returns 503 without one)
+curl.exe -s -X POST http://127.0.0.1:8000/summarize-claim -H "Content-Type: application/json" `
+  -d '{\"adjuster_notes\": \"Claim CLM-2024-10045: flood damage to the warehouse on 15 June 2024. GBP 180,000 claimed.\"}'
+
+# the same claim via the Week 7 agent -- a multi-step loop, with every step in the response
+curl.exe -s -X POST http://127.0.0.1:8000/agent/process-claim -H "Content-Type: application/json" `
+  -d '{\"adjuster_notes\": \"Claim CLM-2024-10045: flood damage to the warehouse on 15 June 2024. GBP 180,000 claimed.\"}'
 ```
 
 In Git Bash the quoting is simpler:
@@ -140,7 +148,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-Expected: **55 passed, 2 skipped** in about 5 seconds. The 2 skips are the
+Expected: **64 passed, 2 skipped** in about 5 seconds. The 2 skips are the
 live-Claude tests, which self-skip without `ANTHROPIC_API_KEY`.
 
 The suite is hermetic — hashing embedder plus in-memory store — so it needs no
@@ -181,6 +189,7 @@ What each file covers:
 | `tests/test_retrieval.py` | Known questions retrieve the answering chunk in top-5; ingestion is idempotent |
 | `tests/test_answering.py` | Out-of-scope returns not-found; fabricated citations are discarded |
 | `tests/test_api.py` | The HTTP contract for all endpoints |
+| `tests/test_agent.py` | The Week 7 claims agent: multi-step completion, safe stopping, tool dispatch |
 
 ---
 
@@ -205,10 +214,18 @@ What each file covers:
 
 # see all options
 .\.venv\Scripts\python.exe -m scripts.chunk_size_comparison --help
+
+# Week 7: race the claims agent against the fixed summarize_claim() workflow
+.\.venv\Scripts\python.exe -m scripts.w7_agent_vs_workflow
+
+# against a live model instead of the deterministic stub
+.\.venv\Scripts\python.exe -m scripts.w7_agent_vs_workflow --llm-provider anthropic
 ```
 
-The comparison uses throwaway in-memory stores, so it never disturbs
-`chroma_db/`.
+Both comparison scripts use throwaway in-memory stores, so neither ever
+disturbs `chroma_db/`. `w7_agent_vs_workflow` writes its tables to
+`coursework/w7/results.md` and the full step-by-step traces to
+`coursework/w7/race_raw.json`.
 
 ---
 

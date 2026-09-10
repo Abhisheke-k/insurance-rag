@@ -421,7 +421,7 @@ each trade-off is what generalises; the absolute numbers are not a benchmark.
 ## Tests
 
 ```bash
-python -m pytest            # 55 passed, 2 skipped (live-model tests)
+python -m pytest            # 64 passed, 2 skipped (live-model tests)
 ```
 
 Hermetic by construction: the hashing embedder and the in-memory store mean no

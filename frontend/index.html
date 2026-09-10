@@ -385,6 +385,51 @@
     margin-left: 6px;
   }
 
+  /* --- claims agent -------------------------------------------------- */
+  /* Same slip component as the answer, keyed by coverage_decision instead
+     of found/not-found so a denial reads visually distinct from a cover. */
+  .slip[data-decision="denied"] { border-top-color: var(--stamp); }
+  .slip[data-decision="denied"] .slip-stamp .verdict { color: var(--stamp); }
+  .slip[data-decision="covered"] { border-top-color: var(--verify); }
+  .slip[data-decision="covered"] .slip-stamp .verdict { color: var(--verify); }
+  .slip[data-decision="partially_covered"],
+  .slip[data-decision="needs_review"] { border-top-color: var(--flag); background: var(--flag-bg); }
+  .slip[data-decision="partially_covered"] .slip-stamp .verdict,
+  .slip[data-decision="needs_review"] .slip-stamp .verdict { color: var(--flag); }
+
+  ol.steps { list-style: none; margin: 0; padding: 0; }
+  .step { display: grid; grid-template-columns: 34px minmax(0, 1fr); border-bottom: 1px solid var(--rule-soft); }
+  .step:last-child { border-bottom: 0; }
+  .step .rank {
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1;
+    padding: 15px 0 0;
+    text-align: center;
+    color: var(--surface);
+    background: var(--ink);
+  }
+  .step[data-action="finalize"] .rank { background: var(--verify); }
+  .step[data-action="check_assertions"] .rank { background: var(--flag); }
+  .step .detail { padding: 12px 14px; min-width: 0; }
+  .step .action {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .step .thought { font-family: var(--serif); font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); margin: 6px 0 0; }
+  .step .observation {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: var(--ink-faint);
+    margin: 8px 0 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
   /* --- library ------------------------------------------------------ */
   .drop {
     margin: 16px;
@@ -500,6 +545,48 @@
       <div id="library-toast"></div>
       <div id="library-slot">
         <p class="library-empty">No documents loaded yet.</p>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<main class="workspace">
+  <!-- ---------------- claims agent column (Week 7) ---------------- -->
+  <section aria-labelledby="claim-heading">
+    <div class="panel">
+      <header>
+        <h2 id="claim-heading">Claims Agent</h2>
+        <span class="hint">Enter to process &middot; Shift+Enter for a new line</span>
+      </header>
+      <form id="claim-form">
+        <label class="visually-hidden" for="adjuster-notes">Adjuster notes</label>
+        <textarea id="adjuster-notes" name="adjuster_notes"
+                  placeholder="Claim CLM-2024-00123: insured reports flood damage on 12 March 2024 to the warehouse roof..."></textarea>
+        <div class="controls">
+          <span class="spacer"></span>
+          <button type="submit" id="claim-button">Process claim</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="panel" id="claim-panel" hidden>
+      <header>
+        <h2>Decision</h2>
+        <span class="hint" id="claim-hint"></span>
+      </header>
+      <div id="claim-slot" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- ---------------- step trace column ---------------- -->
+  <aside aria-labelledby="steps-heading">
+    <div class="panel">
+      <header>
+        <h2 id="steps-heading">Agent steps</h2>
+        <span class="hint" id="steps-hint"></span>
+      </header>
+      <div id="steps-slot">
+        <p class="evidence-empty">Every turn of the loop -- thought, action, observation -- appears here once you process a claim.</p>
       </div>
     </div>
   </aside>
@@ -744,6 +831,115 @@
     }
   }
 
+  /* ---------------- claims agent ---------------- */
+  function renderSteps(steps) {
+    const slot = $("steps-slot");
+    slot.replaceChildren();
+    $("steps-hint").textContent = steps.length ? `${steps.length} step${steps.length === 1 ? "" : "s"}` : "";
+
+    if (!steps.length) {
+      slot.append(el("p", "evidence-empty", "Every turn of the loop -- thought, action, observation -- appears here once you process a claim."));
+      return;
+    }
+
+    const list = el("ol", "steps");
+    steps.forEach((step) => {
+      const item = el("li", "step");
+      item.dataset.action = step.action;
+      item.append(el("div", "rank", String(step.step_number)));
+
+      const detail = el("div", "detail");
+      detail.append(el("div", "action", step.action.replace(/_/g, " ")));
+      if (step.thought) detail.append(el("p", "thought", step.thought));
+      detail.append(el("div", "observation", step.observation));
+      item.append(detail);
+      list.append(item);
+    });
+    slot.append(list);
+  }
+
+  function renderClaimDecision(payload) {
+    const panel = $("claim-panel");
+    const slot = $("claim-slot");
+    panel.hidden = false;
+    slot.replaceChildren();
+
+    const slip = el("div", "slip");
+    slip.dataset.decision = payload.coverage_decision;
+
+    const stamp = el("div", "slip-stamp");
+    stamp.append(el("span", "verdict", payload.coverage_decision.replace(/_/g, " ")));
+    stamp.append(
+      el(
+        "span",
+        "meta",
+        `${payload.llm_calls} LLM call${payload.llm_calls === 1 ? "" : "s"} · ${payload.elapsed_seconds.toFixed(3)}s · ${payload.stopped_reason}`
+      )
+    );
+    slip.append(stamp);
+
+    slip.append(el("div", "slip-body", payload.summary));
+
+    const provenance = [
+      `claim ${payload.claim_number}`,
+      payload.date_of_loss ? `loss ${payload.date_of_loss}` : null,
+      payload.cited_exclusion_id ? `exclusion ${payload.cited_exclusion_id}` : null,
+      payload.excess_amount != null ? `excess GBP ${payload.excess_amount.toLocaleString()}` : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    slip.append(el("div", "slip-note", provenance));
+
+    if (payload.notes && payload.notes.length) {
+      const note = el("div", "slip-note");
+      const list = el("ul");
+      payload.notes.forEach((text) => list.append(el("li", null, text)));
+      note.append(list);
+      slip.append(note);
+    }
+
+    slot.append(slip);
+    $("claim-hint").textContent = payload.model ? payload.model : "";
+    renderSteps(payload.steps || []);
+  }
+
+  function renderClaimFailure(message) {
+    const panel = $("claim-panel");
+    const slot = $("claim-slot");
+    panel.hidden = false;
+    slot.replaceChildren();
+
+    const slip = el("div", "slip");
+    slip.dataset.state = "error";
+    const stamp = el("div", "slip-stamp");
+    stamp.append(el("span", "verdict", "Request failed"));
+    slip.append(stamp);
+    slip.append(el("div", "slip-body", message));
+    slot.append(slip);
+    $("claim-hint").textContent = "";
+  }
+
+  async function processClaim(notes) {
+    const button = $("claim-button");
+    button.disabled = true;
+    $("claim-panel").hidden = false;
+    $("claim-slot").replaceChildren(el("div", "thinking", "Working the claim"));
+    $("claim-hint").textContent = "";
+
+    try {
+      const payload = await api("/agent/process-claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adjuster_notes: notes }),
+      });
+      renderClaimDecision(payload);
+    } catch (error) {
+      renderClaimFailure(error.message);
+    } finally {
+      button.disabled = false;
+    }
+  }
+
   /* ---------------- wiring ---------------- */
   const form = $("ask-form");
   const question = $("question");
@@ -758,6 +954,22 @@
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       form.requestSubmit();
+    }
+  });
+
+  const claimForm = $("claim-form");
+  const adjusterNotes = $("adjuster-notes");
+
+  claimForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const text = adjusterNotes.value.trim();
+    if (text) processClaim(text);
+  });
+
+  adjusterNotes.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      claimForm.requestSubmit();
     }
   });
 

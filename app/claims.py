@@ -39,6 +39,7 @@ __all__ = [
     "ClaimSummaryGenerationError",
     "ClaimSummaryGenerator",
     "build_claim_user_message",
+    "resolve_citations",
 ]
 
 #: The canonical claim-number shape this whole app assumes -- also the
@@ -162,6 +163,33 @@ def _to_citation(chunk: RetrievedChunk) -> Citation:
     )
 
 
+def resolve_citations(
+    raw_citations: Any, numbered: Sequence[RetrievedChunk], notes: list[str]
+) -> list[Citation]:
+    """Resolve claimed passage numbers back to real chunks; drop what does not resolve.
+
+    Shared by :class:`ClaimSummaryGenerator` and the Week 7 :class:`~app.agent.ClaimsAgent`
+    -- both cite passages by 1-based position in a numbered passage list.
+    """
+    citations: list[Citation] = []
+    seen: set[str] = set()
+    for raw in raw_citations or []:
+        try:
+            index = int(raw)
+        except (TypeError, ValueError):
+            notes.append(f"discarded non-numeric citation {raw!r}")
+            continue
+        if not 1 <= index <= len(numbered):
+            notes.append(f"discarded out-of-range citation [{index}]")
+            continue
+        chunk = numbered[index - 1]
+        if chunk.chunk_id in seen:
+            continue
+        seen.add(chunk.chunk_id)
+        citations.append(_to_citation(chunk))
+    return citations
+
+
 class ClaimSummaryGenerator:
     """Wraps a single LLM call plus citation verification, mirroring AnswerGenerator."""
 
@@ -239,22 +267,7 @@ class ClaimSummaryGenerator:
         model: str | None,
         notes: list[str],
     ) -> ClaimSummary:
-        citations: list[Citation] = []
-        seen: set[str] = set()
-        for raw in payload.get("citations") or []:
-            try:
-                index = int(raw)
-            except (TypeError, ValueError):
-                notes.append(f"discarded non-numeric citation {raw!r}")
-                continue
-            if not 1 <= index <= len(retrieved):
-                notes.append(f"discarded out-of-range citation [{index}]")
-                continue
-            chunk = retrieved[index - 1]
-            if chunk.chunk_id in seen:
-                continue
-            seen.add(chunk.chunk_id)
-            citations.append(_to_citation(chunk))
+        citations = resolve_citations(payload.get("citations"), retrieved, notes)
 
         coverage_decision = str(payload.get("coverage_decision", "needs_review"))
         cited_exclusion_id = payload.get("cited_exclusion_id")

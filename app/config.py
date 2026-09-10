@@ -133,6 +133,20 @@ class Settings(BaseSettings):
     answer_max_tokens: int = Field(default=16000, ge=1024)
 
     # ------------------------------------------------------------------ #
+    # Claims agent (Week 7) -- stop conditions for the think/act/observe loop
+    # ------------------------------------------------------------------ #
+    agent_max_steps: int = Field(
+        default=6,
+        ge=1,
+        description="Hard cap on loop turns. Hit without finalizing -> needs_review, not a hang.",
+    )
+    agent_timeout_seconds: float = Field(
+        default=30.0,
+        ge=1.0,
+        description="Wall-clock budget for the whole loop, checked once per turn.",
+    )
+
+    # ------------------------------------------------------------------ #
     # Service
     # ------------------------------------------------------------------ #
     max_upload_bytes: int = Field(default=50 * 1024 * 1024, ge=1024)

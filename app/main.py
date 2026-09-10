@@ -2,12 +2,13 @@
 
 Endpoints
 ---------
-``POST /ingest``            multipart upload of one or more endorsement PDFs
-``POST /ask``                question -> grounded answer + citations
-``POST /summarize-claim``    adjuster notes -> structured, cited claim summary
-``GET  /documents``          what has been ingested, and under which settings
-``GET  /health``             resolved configuration and store status
-``GET  /ui``                  the self-contained single-page frontend
+``POST /ingest``              multipart upload of one or more endorsement PDFs
+``POST /ask``                  question -> grounded answer + citations
+``POST /summarize-claim``      adjuster notes -> structured, cited claim summary
+``POST /agent/process-claim``  adjuster notes -> the same, via a multi-step agent (Week 7)
+``GET  /documents``            what has been ingested, and under which settings
+``GET  /health``               resolved configuration and store status
+``GET  /ui``                    the self-contained single-page frontend
 """
 
 from __future__ import annotations
@@ -22,11 +23,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.agent import ClaimsAgentError
 from app.claims import ClaimSummaryGenerationError
 from app.config import Settings, get_settings
 from app.generation import GenerationUnavailableError
 from app.rag import RagService
 from app.schemas import (
+    AgentClaimResponse,
     AskRequest,
     AskResponse,
     CitationModel,
@@ -201,6 +204,26 @@ def create_app(settings: Settings | None = None, service: RagService | None = No
             for rank, chunk in enumerate(outcome.retrieved, start=1)
         ]
         return ClaimSummaryResponse.from_summary(outcome.summary, retrieval)
+
+    # ------------------------------------------------------------------ #
+    @app.post("/agent/process-claim", response_model=AgentClaimResponse, tags=["claims"])
+    def process_claim_with_agent(
+        payload: SummarizeClaimRequest, service: ServiceDep
+    ) -> AgentClaimResponse:
+        """Turn adjuster notes into a claim summary via a multi-step agent (Week 7).
+
+        Same output shape as ``/summarize-claim``, plus the full step-by-step
+        trace of how the agent got there. See ``app/agent.py`` and
+        ``coursework/w7/``.
+        """
+        try:
+            result = service.process_claim_with_agent(payload.adjuster_notes, payload.top_k)
+        except ValueError as exc:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+        except ClaimsAgentError as exc:
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc)) from exc
+
+        return AgentClaimResponse.from_result(result)
 
     # ------------------------------------------------------------------ #
     @app.get("/documents", response_model=DocumentsResponse, tags=["documents"])

@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Sequence
 
+from app.agent import AgentClaimResult, ClaimsAgent
 from app.chunking import StructureAwareChunker, build_chunker
 from app.claims import ClaimSummary, ClaimSummaryGenerator
 from app.config import Settings
@@ -76,6 +77,7 @@ class RagService:
         generator: AnswerGenerator | None = None,
         chunker: StructureAwareChunker | None = None,
         claim_generator: ClaimSummaryGenerator | None = None,
+        claims_agent: ClaimsAgent | None = None,
     ) -> None:
         self.settings = settings
         self.embedder = embedder or build_embedder(settings)
@@ -84,6 +86,7 @@ class RagService:
         self.generator = generator or AnswerGenerator(settings)
         self.chunker = chunker or build_chunker(settings)
         self.claim_generator = claim_generator or ClaimSummaryGenerator(settings)
+        self.claims_agent = claims_agent or ClaimsAgent(settings, searcher=self)
         self._bm25_index: BM25Index | None = None
         self._bm25_dirty = True
 
@@ -273,6 +276,17 @@ class RagService:
         summary = self.claim_generator.summarize(adjuster_notes, retrieved)
         return ClaimSummaryOutcome(summary=summary, retrieved=retrieved)
 
+    def process_claim_with_agent(
+        self, adjuster_notes: str, top_k: int | None = None
+    ) -> AgentClaimResult:
+        """The Week 7 multi-step counterpart to :meth:`summarize_claim`.
+
+        Same eventual output shape (a :class:`~app.claims.ClaimSummary`), but
+        reached by a think/act/observe loop that searches and self-checks
+        rather than one retrieve-then-generate call. See :mod:`app.agent`.
+        """
+        return self.claims_agent.process(adjuster_notes, top_k)
+
     # ------------------------------------------------------------------ #
     # Documents / health
     # ------------------------------------------------------------------ #
@@ -310,6 +324,7 @@ class RagService:
             },
             "generation": self.generator.status(),
             "claim_summaries": self.claim_generator.status(),
+            "claims_agent": self.claims_agent.status(),
         }
 
 

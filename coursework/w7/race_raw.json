@@ -1,0 +1,512 @@
+{
+  "llm_provider": "stub",
+  "scenarios": [
+    {
+      "id": "clear_flood",
+      "adjuster_notes": "Claim CLM-2024-10045: insured's warehouse (Flood Zone 2) suffered flood damage on 15 June 2024 when water entered from a nearby river during heavy rainfall. No prior flood event at this location this policy year. Claimed amount GBP 180,000.",
+      "expected_coverage_decision": "covered",
+      "why": "One good search on the flood sub-limit/deductible clauses (Endorsement 1) should settle this in a single retrieve -- the case the fixed workflow is built for."
+    },
+    {
+      "id": "sequential_flood_e17",
+      "adjuster_notes": "Claim CLM-2024-10046: insured's distribution centre flooded again on 20 July 2024, six weeks (42 days) after an earlier flood at the same site on 8 June 2024. No record of the flood barriers, non-return valves or sump pumps having been tested in the 60 days before the second event.",
+      "expected_coverage_decision": "denied",
+      "why": "A generic 'flood damage' search surfaces Endorsement 1's sub-limit/deductible clauses, not the sequential-event exclusion in Endorsement 4 (clause 4.3, Exclusion Code E-17) or its clause 4.4 carve-out -- correctly deciding this claim needs a second, more targeted search."
+    },
+    {
+      "id": "cyber_fire_writeback",
+      "adjuster_notes": "Claim CLM-2024-10047: a ransomware attack on 3 September 2024 triggered a fire in the server room that caused physical damage to computer hardware and the surrounding building fabric. No ransom was paid and no data was lost; the insured seeks cover for the physical fire damage only.",
+      "expected_coverage_decision": "covered",
+      "why": "The broad cyber exclusion (Endorsement 2, Section 2) reads like a clean denial until Section 3's write-back is found: physical fire/explosion damage resulting from a Cyber Incident is carved back in. Tests whether the pipeline finds and correctly weighs the write-back, not just the exclusion."
+    },
+    {
+      "id": "malformed_claim_number",
+      "adjuster_notes": "Claim ref ABC/2024/778: business interruption following a burst water main that caused a production outage lasting 5 days from 2 November 2024. The outage was notified to the risk manager on 25 November 2024.",
+      "expected_coverage_decision": "covered",
+      "why": "The claim reference is not in CLM-YYYY-NNNNN form, so check_assertions' claim_number_format check should fail and stay failed -- neither pipeline can invent a number the notes never state. Separately, the outage (5 days) exceeds the 72-hour waiting period and was notified within the 30-day window, so coverage itself should still resolve."
+    },
+    {
+      "id": "out_of_scope_theft",
+      "adjuster_notes": "Claim CLM-2024-10048: insured is claiming for a company vehicle stolen from the staff car park on 10 August 2024. Claimed amount GBP 32,000.",
+      "expected_coverage_decision": "needs_review",
+      "why": "Motor theft is outside this endorsement pack entirely (property/liability/cyber/business-interruption only). summarize_claim has no relevance gate (unlike /ask), so this checks whether either pipeline actually recognises out-of-scope circumstances or confidently cites an unrelated clause -- a known gap worth reporting honestly either way."
+    }
+  ],
+  "runs": [
+    {
+      "scenario_id": "clear_flood",
+      "pipeline": "fixed",
+      "elapsed_seconds": 0.0642,
+      "llm_calls": 1,
+      "coverage_decision": "covered",
+      "correct": true,
+      "assertions_passed": 4,
+      "assertions_total": 4,
+      "summary": {
+        "claim_number": "CLM-2024-10045",
+        "date_of_loss": "15 June 2024",
+        "coverage_decision": "covered",
+        "cited_exclusion_id": null,
+        "excess_amount": 250000.0,
+        "summary": "Notes match an insured peril: DEDUCTIBLE\nA deductible of GBP 250,000 each and every loss applies to loss or damage caused by Flood at any location within a Flood Zone.",
+        "citations": [
+          "77e34963221c7200::0000"
+        ],
+        "chunks_used": 5,
+        "notes": []
+      },
+      "steps": null
+    },
+    {
+      "scenario_id": "clear_flood",
+      "pipeline": "agent",
+      "elapsed_seconds": 0.003,
+      "llm_calls": 3,
+      "coverage_decision": "covered",
+      "correct": true,
+      "assertions_passed": 4,
+      "assertions_total": 4,
+      "summary": {
+        "claim_number": "CLM-2024-10045",
+        "date_of_loss": "15 June 2024",
+        "coverage_decision": "covered",
+        "cited_exclusion_id": null,
+        "excess_amount": 250000.0,
+        "summary": "Notes match an insured peril: DEDUCTIBLE\nA deductible of GBP 250,000 each and every loss applies to loss or damage caused by Flood at any location within a Flood Zone.",
+        "citations": [
+          "77e34963221c7200::0000"
+        ],
+        "chunks_used": 5,
+        "notes": []
+      },
+      "steps": [
+        {
+          "step_number": 1,
+          "thought": "search the policy corpus for the circumstances in the notes",
+          "action": "search_policy",
+          "action_input": {
+            "search_query": "Claim CLM-2024-10045: insured's warehouse (Flood Zone 2) suffered flood damage on 15 June 2024 when water entered from a nearby river during heavy rainfall. No prior flood event at this location this"
+          },
+          "observation": "[1] filename: sample_endorsement_pack.pdf | page: 1 | section: GLOBAL MANUFACTURING LTD\nGLOBAL MANUFACTURING LTD\n\nCOMMERCIAL PROPERTY AND LIABILITY ENDORSEMENT PACK\nPolicy Number GML-2024-88213. Period of Insurance: 1 April 2024 to 31 March 2025, both dates inclusive at the address of the Insured. This pack records every endorsement attached to the policy and supersedes any endorsement schedule issued previously.\n\nENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT\nEffective from 1 June 2024. In consideration of the additional premium of GBP 42,750 the following amendments are made to the Property Damage section of the policy.\n\n1. DEFINITIONS\n\n1.1 Flood means the escape of water from the normal confines of any natural or artificial watercourse, lake, reservoir, canal or dam, or inundation from the sea, whether driven by storm or otherwise.\n\n1.2 Flood Zone means any location identified as Zone 2 or Zone 3 on the Environment Agency Flood Map for Planning current at the inception of this endorsement.\n\n2. AMENDMENT TO LIMIT\nThe sub-limit applicable to loss or damage caused by Flood is amended from GBP 2,500,000 to GBP 5,000,000 in the annual aggregate. The revised sub-limit applies to all insured locations combined and is part of, and not in addition to, the policy limit of GBP 40,000,000 any one occurrence.\n\n3. DEDUCTIBLE\nA deductible of GBP 250,000 each and every loss applies to loss or damage caused by Flood at any location within a Flood Zone. At all other locations the standard property deductible of GBP 50,000 each and every loss continues to apply.\n\nSECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT\n\n[2] filename: sample_endorsement_pack.pdf | page: 1-2 | section: ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > 3. DEDUCTIBLE\n3. DEDUCTIBLE\nA deductible of GBP 250,000 each and every loss applies to loss or damage caused by Flood at any location within a Flood Zone. At all other locations the standard property deductible of GBP 50,000 each and every loss continues to apply.\n\nSECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT\n\n4.1 Flood Defence Maintenance\nThe Insured shall maintain all demountable flood barriers, non-return valves and sump pumps at each insured location in good and effective working order, and shall test them at intervals of not more than six months. A written record of each test shall be kept for a period of three years and produced to the Insurer on request.\n\n4.2 Exclusions\nNotwithstanding anything to the contrary in the policy, this endorsement does not cover loss, damage, cost or expense arising directly or indirectly out of:\n\n(a) subsidence, ground heave or landslip, whether or not caused or contributed to by Flood; (b) loss of or damage to growing crops, standing timber, or livestock in the open; (c) any property in the course of construction, erection or installation where the contract value exceeds GBP 1,000,000; (d) loss or damage to stock stored below ground level unless raised at least 150 millimetres above the finished floor level; (e) any fine, penalty or punitive damages levied by a regulator following a Flood event.\n\n4.2.1 Erosion of the sub-limit\nEach payment made under this endorsement, including any payment for professional fees and debris removal, erodes the annual aggregate sub-limit stated in clause 2. Once the annual aggregate sub-limit is exhausted no further payment shall be made under this endorsement for the remainder of the Period of Insurance.\n\n[3] filename: sample_endorsement_pack.pdf | page: 1-2 | section: ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > SECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT > 4.2 Exclusions > 4.2.1 Erosion of the sub-limit\n4.2.1 Erosion of the sub-limit\nEach payment made under this endorsement, including any payment for professional fees and debris removal, erodes the annual aggregate sub-limit stated in clause 2. Once the annual aggregate sub-limit is exhausted no further payment shall be made under this endorsement for the remainder of the Period of Insurance.\n\nENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION\nEffective from inception. This endorsement applies to every section of the policy and replaces any cyber exclusion previously attached.\n\nSECTION 1 - SCOPE OF THE EXCLUSION\n\n1. This exclusion applies to all coverage afforded by the policy, including any extension, endorsement or memorandum, and applies irrespective of any other cause or event contributing concurrently or in any other sequence to the loss.\n\nSECTION 2 - EXCLUSION WORDING\n\n2. Notwithstanding any provision to the contrary within this policy or any endorsement thereto, this policy excludes any loss, damage, liability, claim, cost or expense of whatsoever nature directly or indirectly caused by, contributed to by, resulting from, arising out of or in connection with any of the following, regardless of any other cause or event contributing concurrently or in any other sequence thereto:\n(a) any Cyber Act or Cyber Incident, including but not limited to any action taken in controlling, preventing, suppressing or remediating any Cyber Act or Cyber Incident, and including the cost of any forensic investigation commissioned by the Insured or by any regulator, and including any sum paid or payable to a third party by way of settlement, judgment, award or contractual indemnity in respect of such an act or incident, whether or not the Insured admitted liability;\n\n[4] filename: sample_endorsement_pack.pdf | page: 3 | section: ENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION > SECTION 2 - EXCLUSION WORDING > 2.\n(h) the deliberate act of any employee, contractor or agent of the Insured taken with intent to cause a Cyber Incident, whether or not that person was acting within the scope of their employment or engagement, and whether or not the Insured had performed pre-engagement screening on that person.\n\nSECTION 3 - WRITE-BACK FOR PHYSICAL DAMAGE\n\n3. Subject to all other terms of the policy, this exclusion shall not apply to physical loss of or physical damage to insured property arising from fire or explosion which itself results from a Cyber Incident, provided that the fire or explosion is not the result of a Cyber Act committed with intent to cause physical damage.\n\nENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS\nEffective from 1 October 2024. The Business Interruption section is amended as set out below. All other terms, conditions and exclusions remain unaltered.\n\n1. WAITING PERIOD\nA waiting period of 72 consecutive hours applies to each and every claim under the Business Interruption section. No indemnity is payable in respect of any interruption that is remedied within the waiting period.\n\n2. INDEMNITY PERIOD\nThe maximum indemnity period is extended from 12 months to 18 months from the date on which the interruption begins.\n\n3. NOTIFICATION OF CLAIM\n3. The Insured shall give written notice to the Insurer of any event likely to give rise to a claim under this section within 30 days of that event becoming known to a director or to the risk manager of the Insured. Notice given to the broker alone does not constitute notice to the Insurer.\n\nGENERAL CONDITIONS\n\n1. Cancellation. Either party may cancel this policy by giving 60 days written notice to the other at its last known address. Where the Insurer cancels, a pro rata return of premium shall be made provided no claim has been notified during the Period of Insurance.\n\n[5] filename: sample_endorsement_pack.pdf | page: 2-3 | section: ENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION > SECTION 2 - EXCLUSION WORDING > 2.\n(d) the receipt, transmission, distribution or storage of any Malicious Code, whether or not that Malicious Code was introduced deliberately, negligently or inadvertently, and whether or not the Insured had in place anti-malware controls conforming to any recognised standard including ISO 27001 or the National Institute of Standards and Technology Cybersecurity Framework;\n(e) any regulatory investigation, enquiry, examination, inspection, hearing or proceeding brought by any data protection authority, supervisory authority, information commissioner or equivalent body in any jurisdiction, together with the costs of responding to any request for information from such a body, and together with any administrative fine or penalty however described;\n(f) any extortion demand, ransom payment, cryptocurrency transfer or negotiation fee made or incurred in response to a threat to a Computer System or to Data, and including the fees of any incident response firm, ransomware negotiator or public relations consultant engaged in connection with that threat;\n(g) any breach of contract, warranty, guarantee, service level agreement or licence term relating to the performance, security, availability or integrity of any Computer System or Data, whether that contract was entered into by the Insured as supplier or as customer;\n(h) the deliberate act of any employee, contractor or agent of the Insured taken with intent to cause a Cyber Incident, whether or not that person was acting within the scope of their employment or engagement, and whether or not the Insured had performed pre-engagement screening on that person.\n\nSECTION 3 - WRITE-BACK FOR PHYSICAL DAMAGE",
+          "elapsed_seconds": 0.0005
+        },
+        {
+          "step_number": 2,
+          "thought": "check the draft against the deterministic assertions before finalizing",
+          "action": "check_assertions",
+          "action_input": {
+            "claim_number": "CLM-2024-10045",
+            "date_of_loss": "15 June 2024",
+            "coverage_decision": "covered",
+            "cited_exclusion_id": null,
+            "excess_amount": 250000.0,
+            "summary": "Notes match an insured peril: DEDUCTIBLE\nA deductible of GBP 250,000 each and every loss applies to loss or damage caused by Flood at any location within a Flood Zone.",
+            "citations": [
+              1
+            ]
+          },
+          "observation": "claim_number_format=ok (claim_number='CLM-2024-10045'); date_of_loss_parseable=ok (date_of_loss='15 June 2024' parses as %d %B %Y); excess_numeric_if_present=ok (excess_amount=250000.0); exclusion_id_when_denied=ok (coverage_decision='covered' (not asserted))",
+          "elapsed_seconds": 0.0
+        },
+        {
+          "step_number": 3,
+          "thought": "assertions checked; finalize",
+          "action": "finalize",
+          "action_input": {
+            "claim_number": "CLM-2024-10045",
+            "date_of_loss": "15 June 2024",
+            "coverage_decision": "covered",
+            "cited_exclusion_id": null,
+            "excess_amount": 250000.0,
+            "summary": "Notes match an insured peril: DEDUCTIBLE\nA deductible of GBP 250,000 each and every loss applies to loss or damage caused by Flood at any location within a Flood Zone.",
+            "citations": [
+              1
+            ]
+          },
+          "observation": "finalized",
+          "elapsed_seconds": 0.0001
+        }
+      ]
+    },
+    {
+      "scenario_id": "sequential_flood_e17",
+      "pipeline": "fixed",
+      "elapsed_seconds": 0.0017,
+      "llm_calls": 1,
+      "coverage_decision": "denied",
+      "correct": true,
+      "assertions_passed": 4,
+      "assertions_total": 4,
+      "summary": {
+        "claim_number": "CLM-2024-10046",
+        "date_of_loss": "20 July 2024",
+        "coverage_decision": "denied",
+        "cited_exclusion_id": "4.1",
+        "excess_amount": 250000.0,
+        "summary": "Notes describe an excluded scenario: SECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT\n\n4.1 Flood Defence Maintenance\nThe Insured shall maintain all demountable flood barriers, non-return valves and sump pumps at each insured location in good and effective working order, and shall test them at intervals of not more than six months.",
+        "citations": [
+          "77e34963221c7200::0001"
+        ],
+        "chunks_used": 5,
+        "notes": []
+      },
+      "steps": null
+    },
+    {
+      "scenario_id": "sequential_flood_e17",
+      "pipeline": "agent",
+      "elapsed_seconds": 0.0048,
+      "llm_calls": 3,
+      "coverage_decision": "denied",
+      "correct": true,
+      "assertions_passed": 4,
+      "assertions_total": 4,
+      "summary": {
+        "claim_number": "CLM-2024-10046",
+        "date_of_loss": "20 July 2024",
+        "coverage_decision": "denied",
+        "cited_exclusion_id": "4.1",
+        "excess_amount": 250000.0,
+        "summary": "Notes describe an excluded scenario: SECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT\n\n4.1 Flood Defence Maintenance\nThe Insured shall maintain all demountable flood barriers, non-return valves and sump pumps at each insured location in good and effective working order, and shall test them at intervals of not more than six months.",
+        "citations": [
+          "77e34963221c7200::0001"
+        ],
+        "chunks_used": 5,
+        "notes": []
+      },
+      "steps": [
+        {
+          "step_number": 1,
+          "thought": "search the policy corpus for the circumstances in the notes",
+          "action": "search_policy",
+          "action_input": {
+            "search_query": "Claim CLM-2024-10046: insured's distribution centre flooded again on 20 July 2024, six weeks (42 days) after an earlier flood at the same site on 8 June 2024. No record of the flood barriers, non-retu"
+          },
+          "observation": "[1] filename: sample_endorsement_pack.pdf | page: 1 | section: GLOBAL MANUFACTURING LTD\nGLOBAL MANUFACTURING LTD\n\nCOMMERCIAL PROPERTY AND LIABILITY ENDORSEMENT PACK\nPolicy Number GML-2024-88213. Period of Insurance: 1 April 2024 to 31 March 2025, both dates inclusive at the address of the Insured. This pack records every endorsement attached to the policy and supersedes any endorsement schedule issued previously.\n\nENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT\nEffective from 1 June 2024. In consideration of the additional premium of GBP 42,750 the following amendments are made to the Property Damage section of the policy.\n\n1. DEFINITIONS\n\n1.1 Flood means the escape of water from the normal confines of any natural or artificial watercourse, lake, reservoir, canal or dam, or inundation from the sea, whether driven by storm or otherwise.\n\n1.2 Flood Zone means any location identified as Zone 2 or Zone 3 on the Environment Agency Flood Map for Planning current at the inception of this endorsement.\n\n2. AMENDMENT TO LIMIT\nThe sub-limit applicable to loss or damage caused by Flood is amended from GBP 2,500,000 to GBP 5,000,000 in the annual aggregate. The revised sub-limit applies to all insured locations combined and is part of, and not in addition to, the policy limit of GBP 40,000,000 any one occurrence.\n\n3. DEDUCTIBLE\nA deductible of GBP 250,000 each and every loss applies to loss or damage caused by Flood at any location within a Flood Zone. At all other locations the standard property deductible of GBP 50,000 each and every loss continues to apply.\n\nSECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT\n\n[2] filename: sample_endorsement_pack.pdf | page: 1-2 | section: ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > 3. DEDUCTIBLE\n3. DEDUCTIBLE\nA deductible of GBP 250,000 each and every loss applies to loss or damage caused by Flood at any location within a Flood Zone. At all other locations the standard property deductible of GBP 50,000 each and every loss continues to apply.\n\nSECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT\n\n4.1 Flood Defence Maintenance\nThe Insured shall maintain all demountable flood barriers, non-return valves and sump pumps at each insured location in good and effective working order, and shall test them at intervals of not more than six months. A written record of each test shall be kept for a period of three years and produced to the Insurer on request.\n\n4.2 Exclusions\nNotwithstanding anything to the contrary in the policy, this endorsement does not cover loss, damage, cost or expense arising directly or indirectly out of:\n\n(a) subsidence, ground heave or landslip, whether or not caused or contributed to by Flood; (b) loss of or damage to growing crops, standing timber, or livestock in the open; (c) any property in the course of construction, erection or installation where the contract value exceeds GBP 1,000,000; (d) loss or damage to stock stored below ground level unless raised at least 150 millimetres above the finished floor level; (e) any fine, penalty or punitive damages levied by a regulator following a Flood event.\n\n4.2.1 Erosion of the sub-limit\nEach payment made under this endorsement, including any payment for professional fees and debris removal, erodes the annual aggregate sub-limit stated in clause 2. Once the annual aggregate sub-limit is exhausted no further payment shall be made under this endorsement for the remainder of the Period of Insurance.\n\n[3] filename: sample_endorsement_pack.pdf | page: 1-2 | section: ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > SECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT > 4.2 Exclusions > 4.2.1 Erosion of the sub-limit\n4.2.1 Erosion of the sub-limit\nEach payment made under this endorsement, including any payment for professional fees and debris removal, erodes the annual aggregate sub-limit stated in clause 2. Once the annual aggregate sub-limit is exhausted no further payment shall be made under this endorsement for the remainder of the Period of Insurance.\n\nENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION\nEffective from inception. This endorsement applies to every section of the policy and replaces any cyber exclusion previously attached.\n\nSECTION 1 - SCOPE OF THE EXCLUSION\n\n1. This exclusion applies to all coverage afforded by the policy, including any extension, endorsement or memorandum, and applies irrespective of any other cause or event contributing concurrently or in any other sequence to the loss.\n\nSECTION 2 - EXCLUSION WORDING\n\n2. Notwithstanding any provision to the contrary within this policy or any endorsement thereto, this policy excludes any loss, damage, liability, claim, cost or expense of whatsoever nature directly or indirectly caused by, contributed to by, resulting from, arising out of or in connection with any of the following, regardless of any other cause or event contributing concurrently or in any other sequence thereto:\n(a) any Cyber Act or Cyber Incident, including but not limited to any action taken in controlling, preventing, suppressing or remediating any Cyber Act or Cyber Incident, and including the cost of any forensic investigation commissioned by the Insured or by any regulator, and including any sum paid or payable to a third party by way of settlement, judgment, award or contractual indemnity in respect of such an act or incident, whether or not the Insured admitted liability;\n\n[4] filename: sample_endorsement_pack.pdf | page: 3 | section: ENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION > SECTION 2 - EXCLUSION WORDING > 2.\n(h) the deliberate act of any employee, contractor or agent of the Insured taken with intent to cause a Cyber Incident, whether or not that person was acting within the scope of their employment or engagement, and whether or not the Insured had performed pre-engagement screening on that person.\n\nSECTION 3 - WRITE-BACK FOR PHYSICAL DAMAGE\n\n3. Subject to all other terms of the policy, this exclusion shall not apply to physical loss of or physical damage to insured property arising from fire or explosion which itself results from a Cyber Incident, provided that the fire or explosion is not the result of a Cyber Act committed with intent to cause physical damage.\n\nENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS\nEffective from 1 October 2024. The Business Interruption section is amended as set out below. All other terms, conditions and exclusions remain unaltered.\n\n1. WAITING PERIOD\nA waiting period of 72 consecutive hours applies to each and every claim under the Business Interruption section. No indemnity is payable in respect of any interruption that is remedied within the waiting period.\n\n2. INDEMNITY PERIOD\nThe maximum indemnity period is extended from 12 months to 18 months from the date on which the interruption begins.\n\n3. NOTIFICATION OF CLAIM\n3. The Insured shall give written notice to the Insurer of any event likely to give rise to a claim under this section within 30 days of that event becoming known to a director or to the risk manager of the Insured. Notice given to the broker alone does not constitute notice to the Insurer.\n\nGENERAL CONDITIONS\n\n1. Cancellation. Either party may cancel this policy by giving 60 days written notice to the other at its last known address. Where the Insurer cancels, a pro rata return of premium shall be made provided no claim has been notified during the Period of Insurance.\n\n[5] filename: sample_endorsement_pack.pdf | page: 2 | section: ENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION > SECTION 2 - EXCLUSION WORDING > 2.\nto any action taken in controlling, preventing, suppressing or remediating any Cyber Act or Cyber Incident, and including the cost of any forensic investigation commissioned by the Insured or by any regulator, and including any sum paid or payable to a third party by way of settlement, judgment, award or contractual indemnity in respect of such an act or incident, whether or not the Insured admitted liability;\n(b) any loss of use, reduction in functionality, repair, replacement, restoration or reproduction of any Data, including any amount pertaining to the value of such Data, and including the cost of re-keying, re-entering or otherwise reconstituting Data from source documents where those documents themselves remain undamaged, and including any loss of profit consequent upon such loss of use;\n(c) the failure, malfunction, degradation, unavailability or interruption of any Computer System, whether owned or operated by the Insured or by any third party service provider, cloud host, managed service provider or telecommunications carrier upon which the Insured relies, and whether or not the Insured had a contractual right of recourse against that party;\n(d) the receipt, transmission, distribution or storage of any Malicious Code, whether or not that Malicious Code was introduced deliberately, negligently or inadvertently, and whether or not the Insured had in place anti-malware controls conforming to any recognised standard including ISO 27001 or the National Institute of Standards and Technology Cybersecurity Framework;",
+          "elapsed_seconds": 0.0006
+        },
+        {
+          "step_number": 2,
+          "thought": "check the draft against the deterministic assertions before finalizing",
+          "action": "check_assertions",
+          "action_input": {
+            "claim_number": "CLM-2024-10046",
+            "date_of_loss": "20 July 2024",
+            "coverage_decision": "denied",
+            "cited_exclusion_id": "4.1",
+            "excess_amount": 250000.0,
+            "summary": "Notes describe an excluded scenario: SECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT\n\n4.1 Flood Defence Maintenance\nThe Insured shall maintain all demountable flood barriers, non-return valves and sump pumps at each insured location in good and effective working order, and shall test them at intervals of not more than six months.",
+            "citations": [
+              2
+            ]
+          },
+          "observation": "claim_number_format=ok (claim_number='CLM-2024-10046'); date_of_loss_parseable=ok (date_of_loss='20 July 2024' parses as %d %B %Y); excess_numeric_if_present=ok (excess_amount=250000.0); exclusion_id_when_denied=ok (cited_exclusion_id='4.1')",
+          "elapsed_seconds": 0.0001
+        },
+        {
+          "step_number": 3,
+          "thought": "assertions checked; finalize",
+          "action": "finalize",
+          "action_input": {
+            "claim_number": "CLM-2024-10046",
+            "date_of_loss": "20 July 2024",
+            "coverage_decision": "denied",
+            "cited_exclusion_id": "4.1",
+            "excess_amount": 250000.0,
+            "summary": "Notes describe an excluded scenario: SECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT\n\n4.1 Flood Defence Maintenance\nThe Insured shall maintain all demountable flood barriers, non-return valves and sump pumps at each insured location in good and effective working order, and shall test them at intervals of not more than six months.",
+            "citations": [
+              2
+            ]
+          },
+          "observation": "finalized",
+          "elapsed_seconds": 0.0002
+        }
+      ]
+    },
+    {
+      "scenario_id": "cyber_fire_writeback",
+      "pipeline": "fixed",
+      "elapsed_seconds": 0.003,
+      "llm_calls": 1,
+      "coverage_decision": "covered",
+      "correct": true,
+      "assertions_passed": 4,
+      "assertions_total": 4,
+      "summary": {
+        "claim_number": "CLM-2024-10047",
+        "date_of_loss": "3 September 2024",
+        "coverage_decision": "covered",
+        "cited_exclusion_id": null,
+        "excess_amount": null,
+        "summary": "Notes match an insured peril: (f) any extortion demand, ransom payment, cryptocurrency transfer or negotiation fee made or incurred in response to a threat to a Computer System or to Data, and including the fees of any incident response firm, ransomware negotiator or public relations consultant engaged in connection with that threat;",
+        "citations": [
+          "77e34963221c7200::0004"
+        ],
+        "chunks_used": 5,
+        "notes": []
+      },
+      "steps": null
+    },
+    {
+      "scenario_id": "cyber_fire_writeback",
+      "pipeline": "agent",
+      "elapsed_seconds": 0.0048,
+      "llm_calls": 3,
+      "coverage_decision": "covered",
+      "correct": true,
+      "assertions_passed": 4,
+      "assertions_total": 4,
+      "summary": {
+        "claim_number": "CLM-2024-10047",
+        "date_of_loss": "3 September 2024",
+        "coverage_decision": "covered",
+        "cited_exclusion_id": null,
+        "excess_amount": null,
+        "summary": "Notes match an insured peril: (f) any extortion demand, ransom payment, cryptocurrency transfer or negotiation fee made or incurred in response to a threat to a Computer System or to Data, and including the fees of any incident response firm, ransomware negotiator or public relations consultant engaged in connection with that threat;",
+        "citations": [
+          "77e34963221c7200::0004"
+        ],
+        "chunks_used": 5,
+        "notes": []
+      },
+      "steps": [
+        {
+          "step_number": 1,
+          "thought": "search the policy corpus for the circumstances in the notes",
+          "action": "search_policy",
+          "action_input": {
+            "search_query": "Claim CLM-2024-10047: a ransomware attack on 3 September 2024 triggered a fire in the server room that caused physical damage to computer hardware and the surrounding building fabric. No ransom was pa"
+          },
+          "observation": "[1] filename: sample_endorsement_pack.pdf | page: 1 | section: GLOBAL MANUFACTURING LTD\nGLOBAL MANUFACTURING LTD\n\nCOMMERCIAL PROPERTY AND LIABILITY ENDORSEMENT PACK\nPolicy Number GML-2024-88213. Period of Insurance: 1 April 2024 to 31 March 2025, both dates inclusive at the address of the Insured. This pack records every endorsement attached to the policy and supersedes any endorsement schedule issued previously.\n\nENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT\nEffective from 1 June 2024. In consideration of the additional premium of GBP 42,750 the following amendments are made to the Property Damage section of the policy.\n\n1. DEFINITIONS\n\n1.1 Flood means the escape of water from the normal confines of any natural or artificial watercourse, lake, reservoir, canal or dam, or inundation from the sea, whether driven by storm or otherwise.\n\n1.2 Flood Zone means any location identified as Zone 2 or Zone 3 on the Environment Agency Flood Map for Planning current at the inception of this endorsement.\n\n2. AMENDMENT TO LIMIT\nThe sub-limit applicable to loss or damage caused by Flood is amended from GBP 2,500,000 to GBP 5,000,000 in the annual aggregate. The revised sub-limit applies to all insured locations combined and is part of, and not in addition to, the policy limit of GBP 40,000,000 any one occurrence.\n\n3. DEDUCTIBLE\nA deductible of GBP 250,000 each and every loss applies to loss or damage caused by Flood at any location within a Flood Zone. At all other locations the standard property deductible of GBP 50,000 each and every loss continues to apply.\n\nSECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT\n\n[2] filename: sample_endorsement_pack.pdf | page: 2-3 | section: ENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION > SECTION 2 - EXCLUSION WORDING > 2.\n(d) the receipt, transmission, distribution or storage of any Malicious Code, whether or not that Malicious Code was introduced deliberately, negligently or inadvertently, and whether or not the Insured had in place anti-malware controls conforming to any recognised standard including ISO 27001 or the National Institute of Standards and Technology Cybersecurity Framework;\n(e) any regulatory investigation, enquiry, examination, inspection, hearing or proceeding brought by any data protection authority, supervisory authority, information commissioner or equivalent body in any jurisdiction, together with the costs of responding to any request for information from such a body, and together with any administrative fine or penalty however described;\n(f) any extortion demand, ransom payment, cryptocurrency transfer or negotiation fee made or incurred in response to a threat to a Computer System or to Data, and including the fees of any incident response firm, ransomware negotiator or public relations consultant engaged in connection with that threat;\n(g) any breach of contract, warranty, guarantee, service level agreement or licence term relating to the performance, security, availability or integrity of any Computer System or Data, whether that contract was entered into by the Insured as supplier or as customer;\n(h) the deliberate act of any employee, contractor or agent of the Insured taken with intent to cause a Cyber Incident, whether or not that person was acting within the scope of their employment or engagement, and whether or not the Insured had performed pre-engagement screening on that person.\n\nSECTION 3 - WRITE-BACK FOR PHYSICAL DAMAGE\n\n[3] filename: sample_endorsement_pack.pdf | page: 3 | section: ENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION > SECTION 2 - EXCLUSION WORDING > 2.\n(h) the deliberate act of any employee, contractor or agent of the Insured taken with intent to cause a Cyber Incident, whether or not that person was acting within the scope of their employment or engagement, and whether or not the Insured had performed pre-engagement screening on that person.\n\nSECTION 3 - WRITE-BACK FOR PHYSICAL DAMAGE\n\n3. Subject to all other terms of the policy, this exclusion shall not apply to physical loss of or physical damage to insured property arising from fire or explosion which itself results from a Cyber Incident, provided that the fire or explosion is not the result of a Cyber Act committed with intent to cause physical damage.\n\nENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS\nEffective from 1 October 2024. The Business Interruption section is amended as set out below. All other terms, conditions and exclusions remain unaltered.\n\n1. WAITING PERIOD\nA waiting period of 72 consecutive hours applies to each and every claim under the Business Interruption section. No indemnity is payable in respect of any interruption that is remedied within the waiting period.\n\n2. INDEMNITY PERIOD\nThe maximum indemnity period is extended from 12 months to 18 months from the date on which the interruption begins.\n\n3. NOTIFICATION OF CLAIM\n3. The Insured shall give written notice to the Insurer of any event likely to give rise to a claim under this section within 30 days of that event becoming known to a director or to the risk manager of the Insured. Notice given to the broker alone does not constitute notice to the Insurer.\n\nGENERAL CONDITIONS\n\n1. Cancellation. Either party may cancel this policy by giving 60 days written notice to the other at its last known address. Where the Insurer cancels, a pro rata return of premium shall be made provided no claim has been notified during the Period of Insurance.\n\n[4] filename: sample_endorsement_pack.pdf | page: 1-2 | section: ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > 3. DEDUCTIBLE\n3. DEDUCTIBLE\nA deductible of GBP 250,000 each and every loss applies to loss or damage caused by Flood at any location within a Flood Zone. At all other locations the standard property deductible of GBP 50,000 each and every loss continues to apply.\n\nSECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT\n\n4.1 Flood Defence Maintenance\nThe Insured shall maintain all demountable flood barriers, non-return valves and sump pumps at each insured location in good and effective working order, and shall test them at intervals of not more than six months. A written record of each test shall be kept for a period of three years and produced to the Insurer on request.\n\n4.2 Exclusions\nNotwithstanding anything to the contrary in the policy, this endorsement does not cover loss, damage, cost or expense arising directly or indirectly out of:\n\n(a) subsidence, ground heave or landslip, whether or not caused or contributed to by Flood; (b) loss of or damage to growing crops, standing timber, or livestock in the open; (c) any property in the course of construction, erection or installation where the contract value exceeds GBP 1,000,000; (d) loss or damage to stock stored below ground level unless raised at least 150 millimetres above the finished floor level; (e) any fine, penalty or punitive damages levied by a regulator following a Flood event.\n\n4.2.1 Erosion of the sub-limit\nEach payment made under this endorsement, including any payment for professional fees and debris removal, erodes the annual aggregate sub-limit stated in clause 2. Once the annual aggregate sub-limit is exhausted no further payment shall be made under this endorsement for the remainder of the Period of Insurance.\n\n[5] filename: sample_endorsement_pack.pdf | page: 2 | section: ENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION > SECTION 2 - EXCLUSION WORDING > 2.\nto any action taken in controlling, preventing, suppressing or remediating any Cyber Act or Cyber Incident, and including the cost of any forensic investigation commissioned by the Insured or by any regulator, and including any sum paid or payable to a third party by way of settlement, judgment, award or contractual indemnity in respect of such an act or incident, whether or not the Insured admitted liability;\n(b) any loss of use, reduction in functionality, repair, replacement, restoration or reproduction of any Data, including any amount pertaining to the value of such Data, and including the cost of re-keying, re-entering or otherwise reconstituting Data from source documents where those documents themselves remain undamaged, and including any loss of profit consequent upon such loss of use;\n(c) the failure, malfunction, degradation, unavailability or interruption of any Computer System, whether owned or operated by the Insured or by any third party service provider, cloud host, managed service provider or telecommunications carrier upon which the Insured relies, and whether or not the Insured had a contractual right of recourse against that party;\n(d) the receipt, transmission, distribution or storage of any Malicious Code, whether or not that Malicious Code was introduced deliberately, negligently or inadvertently, and whether or not the Insured had in place anti-malware controls conforming to any recognised standard including ISO 27001 or the National Institute of Standards and Technology Cybersecurity Framework;",
+          "elapsed_seconds": 0.0008
+        },
+        {
+          "step_number": 2,
+          "thought": "check the draft against the deterministic assertions before finalizing",
+          "action": "check_assertions",
+          "action_input": {
+            "claim_number": "CLM-2024-10047",
+            "date_of_loss": "3 September 2024",
+            "coverage_decision": "covered",
+            "cited_exclusion_id": null,
+            "excess_amount": null,
+            "summary": "Notes match an insured peril: (f) any extortion demand, ransom payment, cryptocurrency transfer or negotiation fee made or incurred in response to a threat to a Computer System or to Data, and including the fees of any incident response firm, ransomware negotiator or public relations consultant engaged in connection with that threat;",
+            "citations": [
+              2
+            ]
+          },
+          "observation": "claim_number_format=ok (claim_number='CLM-2024-10047'); date_of_loss_parseable=ok (date_of_loss='3 September 2024' parses as %d %B %Y); excess_numeric_if_present=ok (excess_amount is null (not asserted)); exclusion_id_when_denied=ok (coverage_decision='covered' (not asserted))",
+          "elapsed_seconds": 0.0001
+        },
+        {
+          "step_number": 3,
+          "thought": "assertions checked; finalize",
+          "action": "finalize",
+          "action_input": {
+            "claim_number": "CLM-2024-10047",
+            "date_of_loss": "3 September 2024",
+            "coverage_decision": "covered",
+            "cited_exclusion_id": null,
+            "excess_amount": null,
+            "summary": "Notes match an insured peril: (f) any extortion demand, ransom payment, cryptocurrency transfer or negotiation fee made or incurred in response to a threat to a Computer System or to Data, and including the fees of any incident response firm, ransomware negotiator or public relations consultant engaged in connection with that threat;",
+            "citations": [
+              2
+            ]
+          },
+          "observation": "finalized",
+          "elapsed_seconds": 0.0001
+        }
+      ]
+    },
+    {
+      "scenario_id": "malformed_claim_number",
+      "pipeline": "fixed",
+      "elapsed_seconds": 0.0021,
+      "llm_calls": 1,
+      "coverage_decision": "covered",
+      "correct": true,
+      "assertions_passed": 3,
+      "assertions_total": 4,
+      "summary": {
+        "claim_number": "UNKNOWN",
+        "date_of_loss": "2 November 2024",
+        "coverage_decision": "covered",
+        "cited_exclusion_id": null,
+        "excess_amount": null,
+        "summary": "Notes match an insured peril: The Insured shall give written notice to the Insurer of any event likely to give rise to a claim under this section within 30 days of that event becoming known to a director or to the risk manager of the Insured.",
+        "citations": [
+          "77e34963221c7200::0005"
+        ],
+        "chunks_used": 5,
+        "notes": []
+      },
+      "steps": null
+    },
+    {
+      "scenario_id": "malformed_claim_number",
+      "pipeline": "agent",
+      "elapsed_seconds": 0.0028,
+      "llm_calls": 3,
+      "coverage_decision": "denied",
+      "correct": false,
+      "assertions_passed": 3,
+      "assertions_total": 4,
+      "summary": {
+        "claim_number": "UNKNOWN",
+        "date_of_loss": "2 November 2024",
+        "coverage_decision": "denied",
+        "cited_exclusion_id": "h",
+        "excess_amount": null,
+        "summary": "Notes describe an excluded scenario: The Insured shall give written notice to the Insurer of any event likely to give rise to a claim under this section within 30 days of that event becoming known to a director or to the risk manager of the Insured.",
+        "citations": [
+          "77e34963221c7200::0005"
+        ],
+        "chunks_used": 5,
+        "notes": []
+      },
+      "steps": [
+        {
+          "step_number": 1,
+          "thought": "search the policy corpus for the circumstances in the notes",
+          "action": "search_policy",
+          "action_input": {
+            "search_query": "Claim ref ABC/2024/778: business interruption following a burst water main that caused a production outage lasting 5 days from 2 November 2024. The outage was notified to the risk manager on 25 Novemb"
+          },
+          "observation": "[1] filename: sample_endorsement_pack.pdf | page: 3 | section: ENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION > SECTION 2 - EXCLUSION WORDING > 2.\n(h) the deliberate act of any employee, contractor or agent of the Insured taken with intent to cause a Cyber Incident, whether or not that person was acting within the scope of their employment or engagement, and whether or not the Insured had performed pre-engagement screening on that person.\n\nSECTION 3 - WRITE-BACK FOR PHYSICAL DAMAGE\n\n3. Subject to all other terms of the policy, this exclusion shall not apply to physical loss of or physical damage to insured property arising from fire or explosion which itself results from a Cyber Incident, provided that the fire or explosion is not the result of a Cyber Act committed with intent to cause physical damage.\n\nENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS\nEffective from 1 October 2024. The Business Interruption section is amended as set out below. All other terms, conditions and exclusions remain unaltered.\n\n1. WAITING PERIOD\nA waiting period of 72 consecutive hours applies to each and every claim under the Business Interruption section. No indemnity is payable in respect of any interruption that is remedied within the waiting period.\n\n2. INDEMNITY PERIOD\nThe maximum indemnity period is extended from 12 months to 18 months from the date on which the interruption begins.\n\n3. NOTIFICATION OF CLAIM\n3. The Insured shall give written notice to the Insurer of any event likely to give rise to a claim under this section within 30 days of that event becoming known to a director or to the risk manager of the Insured. Notice given to the broker alone does not constitute notice to the Insurer.\n\nGENERAL CONDITIONS\n\n1. Cancellation. Either party may cancel this policy by giving 60 days written notice to the other at its last known address. Where the Insurer cancels, a pro rata return of premium shall be made provided no claim has been notified during the Period of Insurance.\n\n[2] filename: sample_endorsement_pack.pdf | page: 1-2 | section: ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > 3. DEDUCTIBLE\n3. DEDUCTIBLE\nA deductible of GBP 250,000 each and every loss applies to loss or damage caused by Flood at any location within a Flood Zone. At all other locations the standard property deductible of GBP 50,000 each and every loss continues to apply.\n\nSECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT\n\n4.1 Flood Defence Maintenance\nThe Insured shall maintain all demountable flood barriers, non-return valves and sump pumps at each insured location in good and effective working order, and shall test them at intervals of not more than six months. A written record of each test shall be kept for a period of three years and produced to the Insurer on request.\n\n4.2 Exclusions\nNotwithstanding anything to the contrary in the policy, this endorsement does not cover loss, damage, cost or expense arising directly or indirectly out of:\n\n(a) subsidence, ground heave or landslip, whether or not caused or contributed to by Flood; (b) loss of or damage to growing crops, standing timber, or livestock in the open; (c) any property in the course of construction, erection or installation where the contract value exceeds GBP 1,000,000; (d) loss or damage to stock stored below ground level unless raised at least 150 millimetres above the finished floor level; (e) any fine, penalty or punitive damages levied by a regulator following a Flood event.\n\n4.2.1 Erosion of the sub-limit\nEach payment made under this endorsement, including any payment for professional fees and debris removal, erodes the annual aggregate sub-limit stated in clause 2. Once the annual aggregate sub-limit is exhausted no further payment shall be made under this endorsement for the remainder of the Period of Insurance.\n\n[3] filename: sample_endorsement_pack.pdf | page: 1 | section: GLOBAL MANUFACTURING LTD\nGLOBAL MANUFACTURING LTD\n\nCOMMERCIAL PROPERTY AND LIABILITY ENDORSEMENT PACK\nPolicy Number GML-2024-88213. Period of Insurance: 1 April 2024 to 31 March 2025, both dates inclusive at the address of the Insured. This pack records every endorsement attached to the policy and supersedes any endorsement schedule issued previously.\n\nENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT\nEffective from 1 June 2024. In consideration of the additional premium of GBP 42,750 the following amendments are made to the Property Damage section of the policy.\n\n1. DEFINITIONS\n\n1.1 Flood means the escape of water from the normal confines of any natural or artificial watercourse, lake, reservoir, canal or dam, or inundation from the sea, whether driven by storm or otherwise.\n\n1.2 Flood Zone means any location identified as Zone 2 or Zone 3 on the Environment Agency Flood Map for Planning current at the inception of this endorsement.\n\n2. AMENDMENT TO LIMIT\nThe sub-limit applicable to loss or damage caused by Flood is amended from GBP 2,500,000 to GBP 5,000,000 in the annual aggregate. The revised sub-limit applies to all insured locations combined and is part of, and not in addition to, the policy limit of GBP 40,000,000 any one occurrence.\n\n3. DEDUCTIBLE\nA deductible of GBP 250,000 each and every loss applies to loss or damage caused by Flood at any location within a Flood Zone. At all other locations the standard property deductible of GBP 50,000 each and every loss continues to apply.\n\nSECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT\n\n[4] filename: sample_endorsement_pack.pdf | page: 3-4 | section: ENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS > GENERAL CONDITIONS\nGENERAL CONDITIONS\n\n1. Cancellation. Either party may cancel this policy by giving 60 days written notice to the other at its last known address. Where the Insurer cancels, a pro rata return of premium shall be made provided no claim has been notified during the Period of Insurance.\n\n2. Governing law. This policy shall be governed by and construed in accordance with the law of England and Wales, and the parties submit to the exclusive jurisdiction of the courts of England and Wales.\n\n3. Premium payment. The premium is due within 45 days of inception. Failure to pay within that period entitles the Insurer to cancel in accordance with General Condition 1 above.\n\n[5] filename: sample_endorsement_pack.pdf | page: 1-2 | section: ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > SECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT > 4.2 Exclusions > 4.2.1 Erosion of the sub-limit\n4.2.1 Erosion of the sub-limit\nEach payment made under this endorsement, including any payment for professional fees and debris removal, erodes the annual aggregate sub-limit stated in clause 2. Once the annual aggregate sub-limit is exhausted no further payment shall be made under this endorsement for the remainder of the Period of Insurance.\n\nENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION\nEffective from inception. This endorsement applies to every section of the policy and replaces any cyber exclusion previously attached.\n\nSECTION 1 - SCOPE OF THE EXCLUSION\n\n1. This exclusion applies to all coverage afforded by the policy, including any extension, endorsement or memorandum, and applies irrespective of any other cause or event contributing concurrently or in any other sequence to the loss.\n\nSECTION 2 - EXCLUSION WORDING\n\n2. Notwithstanding any provision to the contrary within this policy or any endorsement thereto, this policy excludes any loss, damage, liability, claim, cost or expense of whatsoever nature directly or indirectly caused by, contributed to by, resulting from, arising out of or in connection with any of the following, regardless of any other cause or event contributing concurrently or in any other sequence thereto:\n(a) any Cyber Act or Cyber Incident, including but not limited to any action taken in controlling, preventing, suppressing or remediating any Cyber Act or Cyber Incident, and including the cost of any forensic investigation commissioned by the Insured or by any regulator, and including any sum paid or payable to a third party by way of settlement, judgment, award or contractual indemnity in respect of such an act or incident, whether or not the Insured admitted liability;",
+          "elapsed_seconds": 0.0005
+        },
+        {
+          "step_number": 2,
+          "thought": "check the draft against the deterministic assertions before finalizing",
+          "action": "check_assertions",
+          "action_input": {
+            "claim_number": "UNKNOWN",
+            "date_of_loss": "2 November 2024",
+            "coverage_decision": "denied",
+            "cited_exclusion_id": "h",
+            "excess_amount": null,
+            "summary": "Notes describe an excluded scenario: The Insured shall give written notice to the Insurer of any event likely to give rise to a claim under this section within 30 days of that event becoming known to a director or to the risk manager of the Insured.",
+            "citations": [
+              1
+            ]
+          },
+          "observation": "claim_number_format=FAIL (claim_number='UNKNOWN'); date_of_loss_parseable=ok (date_of_loss='2 November 2024' parses as %d %B %Y); excess_numeric_if_present=ok (excess_amount is null (not asserted)); exclusion_id_when_denied=ok (cited_exclusion_id='h')",
+          "elapsed_seconds": 0.0
+        },
+        {
+          "step_number": 3,
+          "thought": "assertions checked; finalize",
+          "action": "finalize",
+          "action_input": {
+            "claim_number": "UNKNOWN",
+            "date_of_loss": "2 November 2024",
+            "coverage_decision": "denied",
+            "cited_exclusion_id": "h",
+            "excess_amount": null,
+            "summary": "Notes describe an excluded scenario: The Insured shall give written notice to the Insurer of any event likely to give rise to a claim under this section within 30 days of that event becoming known to a director or to the risk manager of the Insured.",
+            "citations": [
+              1
+            ]
+          },
+          "observation": "finalized",
+          "elapsed_seconds": 0.0001
+        }
+      ]
+    },
+    {
+      "scenario_id": "out_of_scope_theft",
+      "pipeline": "fixed",
+      "elapsed_seconds": 0.0014,
+      "llm_calls": 1,
+      "coverage_decision": "covered",
+      "correct": false,
+      "assertions_passed": 4,
+      "assertions_total": 4,
+      "summary": {
+        "claim_number": "CLM-2024-10048",
+        "date_of_loss": "10 August 2024",
+        "coverage_decision": "covered",
+        "cited_exclusion_id": null,
+        "excess_amount": 250000.0,
+        "summary": "Notes match an insured peril: The revised sub-limit applies to all insured locations combined and is part of, and not in addition to, the policy limit of GBP 40,000,000 any one occurrence.",
+        "citations": [
+          "77e34963221c7200::0000"
+        ],
+        "chunks_used": 5,
+        "notes": []
+      },
+      "steps": null
+    },
+    {
+      "scenario_id": "out_of_scope_theft",
+      "pipeline": "agent",
+      "elapsed_seconds": 0.0027,
+      "llm_calls": 3,
+      "coverage_decision": "covered",
+      "correct": false,
+      "assertions_passed": 4,
+      "assertions_total": 4,
+      "summary": {
+        "claim_number": "CLM-2024-10048",
+        "date_of_loss": "10 August 2024",
+        "coverage_decision": "covered",
+        "cited_exclusion_id": null,
+        "excess_amount": 250000.0,
+        "summary": "Notes match an insured peril: The revised sub-limit applies to all insured locations combined and is part of, and not in addition to, the policy limit of GBP 40,000,000 any one occurrence.",
+        "citations": [
+          "77e34963221c7200::0000"
+        ],
+        "chunks_used": 5,
+        "notes": []
+      },
+      "steps": [
+        {
+          "step_number": 1,
+          "thought": "search the policy corpus for the circumstances in the notes",
+          "action": "search_policy",
+          "action_input": {
+            "search_query": "Claim CLM-2024-10048: insured is claiming for a company vehicle stolen from the staff car park on 10 August 2024. Claimed amount GBP 32,000."
+          },
+          "observation": "[1] filename: sample_endorsement_pack.pdf | page: 1 | section: GLOBAL MANUFACTURING LTD\nGLOBAL MANUFACTURING LTD\n\nCOMMERCIAL PROPERTY AND LIABILITY ENDORSEMENT PACK\nPolicy Number GML-2024-88213. Period of Insurance: 1 April 2024 to 31 March 2025, both dates inclusive at the address of the Insured. This pack records every endorsement attached to the policy and supersedes any endorsement schedule issued previously.\n\nENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT\nEffective from 1 June 2024. In consideration of the additional premium of GBP 42,750 the following amendments are made to the Property Damage section of the policy.\n\n1. DEFINITIONS\n\n1.1 Flood means the escape of water from the normal confines of any natural or artificial watercourse, lake, reservoir, canal or dam, or inundation from the sea, whether driven by storm or otherwise.\n\n1.2 Flood Zone means any location identified as Zone 2 or Zone 3 on the Environment Agency Flood Map for Planning current at the inception of this endorsement.\n\n2. AMENDMENT TO LIMIT\nThe sub-limit applicable to loss or damage caused by Flood is amended from GBP 2,500,000 to GBP 5,000,000 in the annual aggregate. The revised sub-limit applies to all insured locations combined and is part of, and not in addition to, the policy limit of GBP 40,000,000 any one occurrence.\n\n3. DEDUCTIBLE\nA deductible of GBP 250,000 each and every loss applies to loss or damage caused by Flood at any location within a Flood Zone. At all other locations the standard property deductible of GBP 50,000 each and every loss continues to apply.\n\nSECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT\n\n[2] filename: sample_endorsement_pack.pdf | page: 1-2 | section: ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > 3. DEDUCTIBLE\n3. DEDUCTIBLE\nA deductible of GBP 250,000 each and every loss applies to loss or damage caused by Flood at any location within a Flood Zone. At all other locations the standard property deductible of GBP 50,000 each and every loss continues to apply.\n\nSECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT\n\n4.1 Flood Defence Maintenance\nThe Insured shall maintain all demountable flood barriers, non-return valves and sump pumps at each insured location in good and effective working order, and shall test them at intervals of not more than six months. A written record of each test shall be kept for a period of three years and produced to the Insurer on request.\n\n4.2 Exclusions\nNotwithstanding anything to the contrary in the policy, this endorsement does not cover loss, damage, cost or expense arising directly or indirectly out of:\n\n(a) subsidence, ground heave or landslip, whether or not caused or contributed to by Flood; (b) loss of or damage to growing crops, standing timber, or livestock in the open; (c) any property in the course of construction, erection or installation where the contract value exceeds GBP 1,000,000; (d) loss or damage to stock stored below ground level unless raised at least 150 millimetres above the finished floor level; (e) any fine, penalty or punitive damages levied by a regulator following a Flood event.\n\n4.2.1 Erosion of the sub-limit\nEach payment made under this endorsement, including any payment for professional fees and debris removal, erodes the annual aggregate sub-limit stated in clause 2. Once the annual aggregate sub-limit is exhausted no further payment shall be made under this endorsement for the remainder of the Period of Insurance.\n\n[3] filename: sample_endorsement_pack.pdf | page: 2-3 | section: ENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION > SECTION 2 - EXCLUSION WORDING > 2.\n(d) the receipt, transmission, distribution or storage of any Malicious Code, whether or not that Malicious Code was introduced deliberately, negligently or inadvertently, and whether or not the Insured had in place anti-malware controls conforming to any recognised standard including ISO 27001 or the National Institute of Standards and Technology Cybersecurity Framework;\n(e) any regulatory investigation, enquiry, examination, inspection, hearing or proceeding brought by any data protection authority, supervisory authority, information commissioner or equivalent body in any jurisdiction, together with the costs of responding to any request for information from such a body, and together with any administrative fine or penalty however described;\n(f) any extortion demand, ransom payment, cryptocurrency transfer or negotiation fee made or incurred in response to a threat to a Computer System or to Data, and including the fees of any incident response firm, ransomware negotiator or public relations consultant engaged in connection with that threat;\n(g) any breach of contract, warranty, guarantee, service level agreement or licence term relating to the performance, security, availability or integrity of any Computer System or Data, whether that contract was entered into by the Insured as supplier or as customer;\n(h) the deliberate act of any employee, contractor or agent of the Insured taken with intent to cause a Cyber Incident, whether or not that person was acting within the scope of their employment or engagement, and whether or not the Insured had performed pre-engagement screening on that person.\n\nSECTION 3 - WRITE-BACK FOR PHYSICAL DAMAGE\n\n[4] filename: sample_endorsement_pack.pdf | page: 3 | section: ENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION > SECTION 2 - EXCLUSION WORDING > 2.\n(h) the deliberate act of any employee, contractor or agent of the Insured taken with intent to cause a Cyber Incident, whether or not that person was acting within the scope of their employment or engagement, and whether or not the Insured had performed pre-engagement screening on that person.\n\nSECTION 3 - WRITE-BACK FOR PHYSICAL DAMAGE\n\n3. Subject to all other terms of the policy, this exclusion shall not apply to physical loss of or physical damage to insured property arising from fire or explosion which itself results from a Cyber Incident, provided that the fire or explosion is not the result of a Cyber Act committed with intent to cause physical damage.\n\nENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS\nEffective from 1 October 2024. The Business Interruption section is amended as set out below. All other terms, conditions and exclusions remain unaltered.\n\n1. WAITING PERIOD\nA waiting period of 72 consecutive hours applies to each and every claim under the Business Interruption section. No indemnity is payable in respect of any interruption that is remedied within the waiting period.\n\n2. INDEMNITY PERIOD\nThe maximum indemnity period is extended from 12 months to 18 months from the date on which the interruption begins.\n\n3. NOTIFICATION OF CLAIM\n3. The Insured shall give written notice to the Insurer of any event likely to give rise to a claim under this section within 30 days of that event becoming known to a director or to the risk manager of the Insured. Notice given to the broker alone does not constitute notice to the Insurer.\n\nGENERAL CONDITIONS\n\n1. Cancellation. Either party may cancel this policy by giving 60 days written notice to the other at its last known address. Where the Insurer cancels, a pro rata return of premium shall be made provided no claim has been notified during the Period of Insurance.\n\n[5] filename: sample_endorsement_pack.pdf | page: 2 | section: ENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION > SECTION 2 - EXCLUSION WORDING > 2.\nto any action taken in controlling, preventing, suppressing or remediating any Cyber Act or Cyber Incident, and including the cost of any forensic investigation commissioned by the Insured or by any regulator, and including any sum paid or payable to a third party by way of settlement, judgment, award or contractual indemnity in respect of such an act or incident, whether or not the Insured admitted liability;\n(b) any loss of use, reduction in functionality, repair, replacement, restoration or reproduction of any Data, including any amount pertaining to the value of such Data, and including the cost of re-keying, re-entering or otherwise reconstituting Data from source documents where those documents themselves remain undamaged, and including any loss of profit consequent upon such loss of use;\n(c) the failure, malfunction, degradation, unavailability or interruption of any Computer System, whether owned or operated by the Insured or by any third party service provider, cloud host, managed service provider or telecommunications carrier upon which the Insured relies, and whether or not the Insured had a contractual right of recourse against that party;\n(d) the receipt, transmission, distribution or storage of any Malicious Code, whether or not that Malicious Code was introduced deliberately, negligently or inadvertently, and whether or not the Insured had in place anti-malware controls conforming to any recognised standard including ISO 27001 or the National Institute of Standards and Technology Cybersecurity Framework;",
+          "elapsed_seconds": 0.0004
+        },
+        {
+          "step_number": 2,
+          "thought": "check the draft against the deterministic assertions before finalizing",
+          "action": "check_assertions",
+          "action_input": {
+            "claim_number": "CLM-2024-10048",
+            "date_of_loss": "10 August 2024",
+            "coverage_decision": "covered",
+            "cited_exclusion_id": null,
+            "excess_amount": 250000.0,
+            "summary": "Notes match an insured peril: The revised sub-limit applies to all insured locations combined and is part of, and not in addition to, the policy limit of GBP 40,000,000 any one occurrence.",
+            "citations": [
+              1
+            ]
+          },
+          "observation": "claim_number_format=ok (claim_number='CLM-2024-10048'); date_of_loss_parseable=ok (date_of_loss='10 August 2024' parses as %d %B %Y); excess_numeric_if_present=ok (excess_amount=250000.0); exclusion_id_when_denied=ok (coverage_decision='covered' (not asserted))",
+          "elapsed_seconds": 0.0
+        },
+        {
+          "step_number": 3,
+          "thought": "assertions checked; finalize",
+          "action": "finalize",
+          "action_input": {
+            "claim_number": "CLM-2024-10048",
+            "date_of_loss": "10 August 2024",
+            "coverage_decision": "covered",
+            "cited_exclusion_id": null,
+            "excess_amount": 250000.0,
+            "summary": "Notes match an insured peril: The revised sub-limit applies to all insured locations combined and is part of, and not in addition to, the policy limit of GBP 40,000,000 any one occurrence.",
+            "citations": [
+              1
+            ]
+          },
+          "observation": "finalized",
+          "elapsed_seconds": 0.0001
+        }
+      ]
+    }
+  ]
+}

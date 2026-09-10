@@ -1071,7 +1071,7 @@ each trade-off generalises; the absolute numbers are not a benchmark.
 ### 6. Run the suite
 
 ```bash
-python -m pytest          # 55 passed, 2 skipped
+python -m pytest          # 64 passed, 2 skipped
 python -m pytest -m integration   # live-model tests, needs ANTHROPIC_API_KEY
 ```
 

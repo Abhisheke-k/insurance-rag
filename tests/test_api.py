@@ -147,6 +147,25 @@ def test_delete_document_removes_it(loaded_client: TestClient):
     assert loaded_client.delete(f"/documents/{doc_id}").status_code == 404
 
 
+def test_agent_process_claim_returns_steps_and_decision(loaded_client: TestClient):
+    response = loaded_client.post(
+        "/agent/process-claim",
+        json={"adjuster_notes": "Claim CLM-2024-00123: flood damage to the warehouse on 12 March 2024. GBP 15,000 claimed."},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["stopped_reason"] == "finalized"
+    assert body["llm_calls"] == len(body["steps"])
+    assert len(body["steps"]) >= 3
+    assert {step["action"] for step in body["steps"]} >= {"search_policy", "check_assertions"}
+    assert body["coverage_decision"] in {"covered", "denied", "partially_covered", "needs_review"}
+
+
+def test_agent_process_claim_rejects_empty_notes(loaded_client: TestClient):
+    assert loaded_client.post("/agent/process-claim", json={"adjuster_notes": ""}).status_code == 422
+
+
 def test_frontend_is_served(client: TestClient):
     response = client.get("/ui/", follow_redirects=True)
     assert response.status_code == 200

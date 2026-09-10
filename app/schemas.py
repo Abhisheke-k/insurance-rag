@@ -12,11 +12,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from app.agent import AgentClaimResult, AgentStep
 from app.claims import ClaimSummary
 from app.models import Citation, DocumentRecord
 from app.rag import IngestResult
 
 __all__ = [
+    "AgentClaimResponse",
+    "AgentStepModel",
     "AskRequest",
     "AskResponse",
     "CitationModel",
@@ -119,6 +122,65 @@ class ClaimSummaryResponse(BaseModel):
         )
 
 
+class AgentStepModel(BaseModel):
+    """One visible turn of the Week 7 claims agent's think/act/observe loop."""
+
+    step_number: int
+    thought: str
+    action: str
+    action_input: dict[str, Any]
+    observation: str
+    elapsed_seconds: float
+
+    @classmethod
+    def from_step(cls, step: AgentStep) -> "AgentStepModel":
+        return cls(
+            step_number=step.step_number,
+            thought=step.thought,
+            action=step.action,
+            action_input=step.action_input,
+            observation=step.observation,
+            elapsed_seconds=round(step.elapsed_seconds, 4),
+        )
+
+
+class AgentClaimResponse(BaseModel):
+    claim_number: str
+    date_of_loss: str
+    coverage_decision: str
+    cited_exclusion_id: str | None = None
+    excess_amount: float | None = None
+    summary: str
+    citations: list[CitationModel]
+    chunks_used: int
+    model: str | None = None
+    notes: list[str] = Field(default_factory=list)
+    steps: list[AgentStepModel]
+    stopped_reason: str
+    llm_calls: int
+    elapsed_seconds: float
+
+    @classmethod
+    def from_result(cls, result: AgentClaimResult) -> "AgentClaimResponse":
+        summary = result.summary
+        return cls(
+            claim_number=summary.claim_number,
+            date_of_loss=summary.date_of_loss,
+            coverage_decision=summary.coverage_decision,
+            cited_exclusion_id=summary.cited_exclusion_id,
+            excess_amount=summary.excess_amount,
+            summary=summary.summary,
+            citations=[CitationModel.from_citation(c) for c in summary.citations],
+            chunks_used=summary.chunks_used,
+            model=summary.model,
+            notes=summary.notes,
+            steps=[AgentStepModel.from_step(s) for s in result.steps],
+            stopped_reason=result.stopped_reason,
+            llm_calls=result.llm_calls,
+            elapsed_seconds=round(result.elapsed_seconds, 4),
+        )
+
+
 class IngestedDocumentModel(BaseModel):
     doc_id: str
     filename: str
@@ -176,3 +238,4 @@ class HealthResponse(BaseModel):
     retrieval: dict[str, Any]
     generation: dict[str, Any]
     claim_summaries: dict[str, Any]
+    claims_agent: dict[str, Any]
