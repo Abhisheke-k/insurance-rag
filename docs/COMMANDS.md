@@ -189,7 +189,8 @@ What each file covers:
 | `tests/test_retrieval.py` | Known questions retrieve the answering chunk in top-5; ingestion is idempotent |
 | `tests/test_answering.py` | Out-of-scope returns not-found; fabricated citations are discarded |
 | `tests/test_api.py` | The HTTP contract for all endpoints |
-| `tests/test_agent.py` | The Week 7 claims agent: multi-step completion, safe stopping, tool dispatch |
+| `tests/test_agent.py` | The Week 7 claims agent: multi-step completion, safe stopping, tool dispatch, plus the Week 8 injection guard wired into `search_policy` |
+| `tests/test_injection_guard.py` | Week 8: flags instruction-shaped passages, leaves genuine policy wording alone (false-positive check against the real corpus) |
 
 ---
 
@@ -220,12 +221,23 @@ What each file covers:
 
 # against a live model instead of the deterministic stub
 .\.venv\Scripts\python.exe -m scripts.w7_agent_vs_workflow --llm-provider anthropic
+
+# Week 8: trajectory eval -- outcome vs. path, per scenario, for the claims agent
+.\.venv\Scripts\python.exe -m scripts.w8_trajectory_eval
+
+# Week 8: indirect prompt injection attack + defense (writes the malicious
+# PDF, races guard-off against guard-on on the same poisoned corpus)
+.\.venv\Scripts\python.exe -m scripts.w8_injection_attack
 ```
 
-Both comparison scripts use throwaway in-memory stores, so neither ever
-disturbs `chroma_db/`. `w7_agent_vs_workflow` writes its tables to
+All four comparison/eval scripts use throwaway in-memory stores, so none of
+them ever disturbs `chroma_db/`. `w7_agent_vs_workflow` writes its tables to
 `coursework/w7/results.md` and the full step-by-step traces to
-`coursework/w7/race_raw.json`.
+`coursework/w7/race_raw.json`; `w8_trajectory_eval` writes to
+`coursework/w8/trajectory_results.md` / `trajectory_raw.json`;
+`w8_injection_attack` writes to `coursework/w8/injection_results.md` /
+`injection_raw.json` and regenerates `data/malicious_endorsement_injection.pdf`
+(gitignored, like every other `data/*.pdf`).
 
 ---
 

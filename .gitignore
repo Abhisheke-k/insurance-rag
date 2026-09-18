@@ -16,6 +16,8 @@ data/*.pdf
 .chunk-comparison/
 .chroma_check/
 .w7-race/
+.w8-trajectory/
+.w8-injection/
 .tmp/
 .eval_scratch/
 
