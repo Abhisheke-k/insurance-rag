@@ -30,7 +30,7 @@ from typing import Sequence
 
 from app.models import RetrievedChunk
 
-__all__ = ["INJECTION_PATTERNS", "InjectionFlag", "quarantine", "scan_chunk"]
+__all__ = ["INJECTION_PATTERNS", "InjectionFlag", "quarantine", "scan_chunk", "scan_text"]
 
 #: (human-readable reason, pattern). Each targets phrasing that instructs the
 #: *reader* to change its own behaviour -- override, skip a check, act on
@@ -74,10 +74,19 @@ class InjectionFlag:
     reason: str
 
 
+def scan_text(text: str) -> list[str]:
+    """Reasons ``text`` looks like it is instructing the reader, or ``[]``.
+
+    The same patterns, applied to any untrusted string -- Week 9 uses it on MCP
+    tool descriptions and tool outputs, which reach the model by the same route
+    a retrieved passage does and deserve the same suspicion.
+    """
+    return [reason for reason, pattern in INJECTION_PATTERNS if pattern.search(text)]
+
+
 def scan_chunk(chunk: RetrievedChunk) -> list[str]:
     """Reasons ``chunk`` looks like it is instructing the reader, or ``[]``."""
-    haystack = f"{chunk.section}\n{chunk.text}"
-    return [reason for reason, pattern in INJECTION_PATTERNS if pattern.search(haystack)]
+    return scan_text(f"{chunk.section}\n{chunk.text}")
 
 
 def quarantine(chunks: Sequence[RetrievedChunk]) -> tuple[list[RetrievedChunk], list[InjectionFlag]]:

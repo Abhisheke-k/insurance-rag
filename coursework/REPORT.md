@@ -1,15 +1,15 @@
-# Task Set D — Weeks 4-8: Implementation Report
+# Task Set D — Weeks 4-10: Implementation Report
 
 **Domain:** Insurance claims. **App:** Endorsement Desk, extended in this
-repo across five weekly practicals. **Environment:** no Anthropic or
+repo across seven weekly practicals. **Environment:** no Anthropic or
 OpenAI API key configured anywhere in this checkout — every result below
 was produced by a new deterministic LLM provider (`app/llm.py`) standing in
 for a real model, with real dense embeddings (`sentence-transformers`) doing
 the actual retrieval work.
 
 Commits (in order): `be081e6` → `49710e3` → `ca0e7c1` → `600e8b9` → `eb4c689`.
-Per-week detail lives in `coursework/w4/` … `coursework/w8/`; this file is
-the consolidated summary.
+Weeks 9-10 are **not yet committed**. Per-week detail lives in `coursework/w4/` … `coursework/w10/`;
+this file is the consolidated summary.
 
 ---
 
@@ -247,6 +247,84 @@ Full detail: [`coursework/w8/results.md`](w8/results.md),
 
 ---
 
+## Week 9 — MCP (`coursework/w9/`)
+
+**Task:** connect the agent to a tool over MCP by *discovery*, build an MCP
+server of our own that someone else's agent can call, and keep it safe.
+
+- `app/mcp_server.py`: `search_policy`, `check_assertions` and an opt-in
+  `lookup_exclusion_code` published over stdio or token-scoped HTTP. Read-only;
+  **no ingest tool** (Week 8's root cause). The server has no model in it: it
+  overrides its settings to the offline backend and clears inherited API keys.
+- `app/mcp_agent.py`: the Week 7/8 loop with the `action` enum, the tool section of
+  the prompt and dispatch all built from `tools/list`. Tool arguments are validated
+  against the *discovered* schema; passage results are numbered by the host, so a
+  server cannot forge a citation.
+- **Adding a second tool changes nothing in the agent**: two real server
+  subprocesses (2 tools, then 3) and identical source hashes; a test defines a tool
+  the agent code has never heard of and the agent calls it. *(The stub model never
+  chose the new tool; real-model uptake is unmeasured.)*
+- **Parity: 33/33 inputs** give the same result from the MCP agent and the
+  in-process agent. Getting there exposed a real bug in my own host: a 6,000-char
+  cap on tool output silently truncated evidence and flipped one decision (32/33
+  first). Fixed by bounding passages by count, with regression tests.
+- **What MCP costs:** +≈2.5 ms per `search_policy` call over stdio and ≈2.8× whole-
+  claim orchestration time with a stub model; and ≈800 extra prompt tokens *per turn*
+  for the discovered tool catalog (≈280 per tool). It is plumbing, not intelligence.
+- **Where the AI runs:** the host. The raw wire (`wire_trace.md`) shows the server
+  was asked one handshake, one `tools/list`, two `tools/call` for a whole claim; no
+  prompt, system message or model field crosses it.
+- **Safety:** bearer tokens (constant-time, hashed), per-token tool scopes where a
+  denied call is indistinguishable from a missing tool, fail-closed, audit log. Vetting
+  of a hostile third-party server: allowlist, read-only requirement, reserved names,
+  injection scan of descriptions/schemas **and outputs**, and definition pinning
+  against rug pulls. Week 8's attack replayed through MCP: *covered* (wrong) with an
+  unscreened server and unguarded host; *denied* if either end screens.
+- **Honest limits:** "someone else's agent" is a script (`w9_peer_agent.py`) that
+  shares no code with `app/`, not another person; no real MCP host was run; no model
+  was real; the FastAPI app does not use the MCP agent.
+
+Full detail: [`coursework/w9/results.md`](w9/results.md),
+[`evidence.md`](w9/evidence.md), [`wire_trace.md`](w9/wire_trace.md).
+
+---
+
+## Week 10 — Multi-agent & A2A (`coursework/w10/`)
+
+**Task:** build a manager + two specialists, race it against the single agent on
+the same tests, report quality, speed, tokens and cost, and give an honest verdict.
+
+- `app/team.py`: manager, **analyst** (search tools only) and **clerk** (check tool
+  only), running in parallel over one MCP connection; lean or full-context hand-offs.
+  `app/metering.py` records calls, tokens and cost per role at the `LLMProvider` seam
+  (`LLMResponse` now carries usage; the stub's is estimated and flagged).
+- **Same 33 claims for everyone** (5 labelled + 28 Week 6 notes) x 3 repeats,
+  interleaved, warmed up. **Team vs. single:** decisions identical on 99/99 runs
+  (equal quality *by construction* with the stub); tokens **0.92x** (lean) / 1.21x
+  (full context); **cost 1.06x / 1.30x**; critical path **4 vs 3** sequential model
+  calls. Calls 2x, output tokens 1.7x. The fixed workflow costs 0.30x and is no less
+  accurate on the labelled claims.
+- **Verdict: keep the single agent.** The team wins on nothing measured. The one
+  place the numbers show money to save is cheap models for the specialists
+  (0.28x of the single agent's cost with Haiku-class specialists) -- but a *single*
+  agent on a cheaper model is cheaper still (0.40x Sonnet-class, 0.02x Haiku-class),
+  so a team earns its keep only if a small model can do the sub-jobs but not the whole
+  job, which needs a live run to find out.
+- **Predictions written before the run, scored honestly: 5 of 7 testable held.**
+  Wrong: wall-clock (the team was ~13% faster, from overlapping tool I/O -- a weak
+  offline instrument) and the cost of Haiku-class specialists (0.28x, not >=0.5x).
+- **When multi-agent is worth it / not, and the A2A decision** (not adopted: all
+  parties are in one process and trust domain; right if another team or vendor owns
+  the capability) are in `coursework/w10/results.md`. I did not read the A2A spec
+  itself, only secondary sources that disagree on a path.
+- **Honest limits:** no real model; tokens are estimates and cost is a projection at
+  list price; wall-clock excludes model latency; one team design on a flat 4-page corpus.
+
+Full detail: [`coursework/w10/results.md`](w10/results.md),
+[`race_tables.md`](w10/race_tables.md), [`prediction.txt`](w10/prediction.txt).
+
+---
+
 ## Left undone / open items
 
 - **Week 5's own prediction** (a deterministic polarity-consistency check
@@ -260,3 +338,8 @@ Full detail: [`coursework/w8/results.md`](w8/results.md),
   a real model would perform. Re-running with `ANTHROPIC_API_KEY` or
   `OPENAI_API_KEY` set (`LLM_PROVIDER=auto` already prefers a real key over
   the stub) is a one-line config change, not a code change.
+- **Weeks 9-10:** the MCP and multi-agent results above are all on the stub model.
+  Re-running `scripts.w10_team_vs_single --llm-provider anthropic --yes` is the test
+  of prediction P8 and of whether a real model uses a newly discovered tool.
+- **Weeks 9-10:** no real MCP host (Claude Code / Desktop) was connected; no A2A was
+  implemented; the MCP agent is not exposed through the FastAPI app.

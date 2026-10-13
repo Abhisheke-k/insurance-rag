@@ -36,6 +36,7 @@ from dataclasses import dataclass, field
 from typing import Any, Sequence
 
 from app.config import Settings
+from app.tokenizer import estimate_tokens
 
 logger = logging.getLogger(__name__)
 
@@ -44,10 +45,31 @@ __all__ = [
     "LLMProvider",
     "LLMResponse",
     "LLMUnavailableError",
+    "LLMUsage",
     "OpenAIProvider",
     "StubProvider",
     "build_llm_provider",
 ]
+
+
+@dataclass(frozen=True, slots=True)
+class LLMUsage:
+    """Tokens one call consumed -- what Week 10's cost comparison is built from.
+
+    ``input_tokens`` is the *uncached* input only (Anthropic's own accounting);
+    cache reads/writes are separate so a cost model can price them differently.
+    ``estimated`` is True when the backend reported nothing and the count comes
+    from ``app.tokenizer.estimate_tokens`` over the real prompt and reply text
+    (the stub, or a provider response without a usage block): the *prompt* is
+    exactly what a real model would be sent, but the count is the same
+    uncalibrated ~4-chars-per-token heuristic the chunker uses.
+    """
+
+    input_tokens: int
+    output_tokens: int
+    cache_read_tokens: int = 0
+    cache_write_tokens: int = 0
+    estimated: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,6 +80,9 @@ class LLMResponse:
     model: str
     stop_reason: str  # "end" | "max_tokens" | "refusal"
     refusal_category: str | None = None
+    #: None when the backend gave no usage block (see :class:`LLMUsage`); callers
+    #: that need a number regardless should go through ``app.metering``.
+    usage: LLMUsage | None = None
 
 
 class LLMUnavailableError(RuntimeError):
@@ -142,15 +167,32 @@ class AnthropicProvider(LLMProvider):
         if not self.is_configured():
             raise LLMUnavailableError(self._init_error or "Anthropic is not configured")
         response = self._call(system, user_message, json_schema, max_tokens, effort)
+        usage = self._usage(response)
 
         if getattr(response, "stop_reason", None) == "refusal":
             details = getattr(response, "stop_details", None)
             category = getattr(details, "category", None) if details else None
-            return LLMResponse(text="", model=self._model, stop_reason="refusal", refusal_category=category)
+            return LLMResponse(
+                text="", model=self._model, stop_reason="refusal", refusal_category=category, usage=usage
+            )
 
         text = "".join(block.text for block in response.content if getattr(block, "type", None) == "text")
         stop_reason = "max_tokens" if getattr(response, "stop_reason", None) == "max_tokens" else "end"
-        return LLMResponse(text=text, model=getattr(response, "model", self._model), stop_reason=stop_reason)
+        return LLMResponse(
+            text=text, model=getattr(response, "model", self._model), stop_reason=stop_reason, usage=usage
+        )
+
+    @staticmethod
+    def _usage(response: Any) -> LLMUsage | None:
+        raw = getattr(response, "usage", None)
+        if raw is None:
+            return None
+        return LLMUsage(
+            input_tokens=int(getattr(raw, "input_tokens", 0) or 0),
+            output_tokens=int(getattr(raw, "output_tokens", 0) or 0),
+            cache_read_tokens=int(getattr(raw, "cache_read_input_tokens", 0) or 0),
+            cache_write_tokens=int(getattr(raw, "cache_creation_input_tokens", 0) or 0),
+        )
 
     def _call(
         self, system: str, user_message: str, json_schema: dict[str, Any], max_tokens: int, effort: str
@@ -240,11 +282,21 @@ class OpenAIProvider(LLMProvider):
         finish_reason = getattr(choice, "finish_reason", "stop")
         stop_reason = {"length": "max_tokens", "content_filter": "refusal"}.get(finish_reason, "end")
         text = choice.message.content or ""
+        raw_usage = getattr(response, "usage", None)
+        usage = (
+            LLMUsage(
+                input_tokens=int(getattr(raw_usage, "prompt_tokens", 0) or 0),
+                output_tokens=int(getattr(raw_usage, "completion_tokens", 0) or 0),
+            )
+            if raw_usage is not None
+            else None
+        )
         return LLMResponse(
             text=text,
             model=getattr(response, "model", self._model),
             stop_reason=stop_reason,
             refusal_category="content_filter" if stop_reason == "refusal" else None,
+            usage=usage,
         )
 
     def _call(self, system: str, user_message: str, json_schema: dict[str, Any], max_tokens: int) -> Any:
@@ -465,6 +517,10 @@ class StubProvider(LLMProvider):
         properties = set((json_schema or {}).get("properties", {}).keys())
         if "pass_criterion" in properties:
             payload = self._judge(system, user_message)
+        elif "delegations" in properties and "thought" in properties:
+            payload = self._manager_turn(user_message)
+        elif "tool_input" in properties and "thought" in properties:
+            payload = self._tool_agent_turn(system, user_message, json_schema)
         elif "action" in properties and "thought" in properties:
             payload = self._agent_turn(user_message)
         elif "coverage_decision" in properties:
@@ -473,7 +529,15 @@ class StubProvider(LLMProvider):
             payload = self._answer_question(user_message)
         else:  # pragma: no cover - defensive; every call site declares a known shape
             raise LLMUnavailableError(f"stub provider has no persona for schema {sorted(properties)!r}")
-        return LLMResponse(text=json.dumps(payload), model=self.name, stop_reason="end")
+        text = json.dumps(payload)
+        # Estimated, not measured: the prompt is exactly what a real model would be
+        # sent, but the count is the offline heuristic (see LLMUsage).
+        usage = LLMUsage(
+            input_tokens=estimate_tokens(system) + estimate_tokens(user_message),
+            output_tokens=estimate_tokens(text),
+            estimated=True,
+        )
+        return LLMResponse(text=text, model=self.name, stop_reason="end", usage=usage)
 
     # ------------------------------------------------------------------ #
     # Persona 1: Q&A answer (matches app.generation.ANSWER_SCHEMA)
@@ -607,6 +671,145 @@ class StubProvider(LLMProvider):
             "action": "finalize",
             "search_query": None,
             **draft,
+        }
+
+    # ------------------------------------------------------------------ #
+    # Persona 3b: agent turn over DISCOVERED tools (matches
+    # app.mcp_agent.build_step_schema).
+    #
+    # Same simulated reasoning as Persona 3, but it works out which tool is
+    # which by reading the <tools> catalog in the system prompt -- the way a
+    # real model would -- rather than being handed names. A search tool is "a
+    # tool whose description says search and which takes a required string"; a
+    # check tool is "a tool that takes claim_number". A tool it does not
+    # recognise as either is simply never called: the stub is a fixed-policy
+    # simulator, not a general reasoner, so it will NOT make use of a brand-new
+    # kind of tool (tests drive that with a scripted model instead). Role limits
+    # what it reports: an analyst leaves the identifying fields to the clerk.
+    # ------------------------------------------------------------------ #
+    @staticmethod
+    def _is_search_tool(tool: dict[str, Any]) -> str | None:
+        """The name of the required string parameter if ``tool`` looks like a topical search, else None."""
+        schema = tool.get("input_schema") or {}
+        properties = schema.get("properties") or {}
+        label = f"{tool.get('name', '')} {tool.get('description', '')}".lower()
+        if "search" not in label or "lookup" in str(tool.get("name", "")).lower():
+            return None
+        for name in schema.get("required") or []:
+            if (properties.get(name) or {}).get("type") == "string":
+                return str(name)
+        return None
+
+    def _tool_agent_turn(self, system: str, user_message: str, json_schema: dict[str, Any]) -> dict[str, Any]:
+        tools_match = re.search(r"<tools>\n(.*?)\n</tools>", system, re.DOTALL)
+        catalog: list[dict[str, Any]] = json.loads(tools_match.group(1)) if tools_match else []
+        role_match = re.search(r"^ROLE:\s*(\S+)", system, re.MULTILINE)
+        role = role_match.group(1) if role_match else "claims_agent"
+        terminal = json_schema["properties"]["action"]["enum"][-1]
+
+        notes_match = re.search(r"<adjuster_notes>\n(.*?)\n</adjuster_notes>", user_message, re.DOTALL)
+        scratchpad_match = re.search(r"<scratchpad>\n(.*?)\n</scratchpad>", user_message, re.DOTALL)
+        notes = notes_match.group(1).strip() if notes_match else user_message
+        scratchpad = scratchpad_match.group(1) if scratchpad_match else ""
+
+        steps = re.findall(r'<step number="\d+" action="([^"]*)">.*?<observation>\n(.*?)\n</observation>', scratchpad, re.DOTALL)
+        failed_prefixes = ("rejected:", "tool error:", "unrecognized action")
+        succeeded = {action for action, observation in steps if not observation.startswith(failed_prefixes)}
+
+        search_tool = next((t for t in catalog if self._is_search_tool(t)), None)
+        check_tool = next((t for t in catalog if "claim_number" in ((t.get("input_schema") or {}).get("properties") or {})), None)
+
+        blank = {
+            "draft_claim_number": None,
+            "draft_date_of_loss": None,
+            "draft_coverage_decision": None,
+            "draft_cited_exclusion_id": None,
+            "draft_excess_amount": None,
+            "draft_summary": None,
+            "draft_citations": [],
+        }
+
+        def turn(thought: str, action: str, tool_input: dict[str, Any], draft: dict[str, Any] | None = None) -> dict[str, Any]:
+            return {"thought": thought, "action": action, "tool_input": json.dumps(tool_input), **(draft or blank)}
+
+        if search_tool and role in ("claims_agent", "coverage_analyst") and search_tool["name"] not in succeeded:
+            parameter = self._is_search_tool(search_tool)
+            return turn(
+                "search the policy corpus for the circumstances in the notes",
+                search_tool["name"],
+                {str(parameter): notes[:200]},
+            )
+
+        evidence = "\n\n".join(
+            observation
+            for action, observation in steps
+            if action in succeeded and action != terminal and not (check_tool and action == check_tool["name"])
+        )
+        scored = _score_passages(_parse_passages(evidence), notes)
+        fields = _infer_claim_fields(notes, scored)
+        draft = {
+            "draft_claim_number": fields["claim_number"],
+            "draft_date_of_loss": fields["date_of_loss"],
+            "draft_coverage_decision": fields["coverage_decision"],
+            "draft_cited_exclusion_id": fields["cited_exclusion_id"],
+            "draft_excess_amount": fields["excess_amount"],
+            "draft_summary": fields["summary"],
+            "draft_citations": fields["citations"],
+        }
+        if role == "coverage_analyst":
+            draft["draft_claim_number"] = draft["draft_date_of_loss"] = None
+        elif role == "claims_clerk":
+            draft = {**blank, "draft_claim_number": fields["claim_number"], "draft_date_of_loss": fields["date_of_loss"]}
+
+        if check_tool and role in ("claims_agent", "claims_clerk") and check_tool["name"] not in succeeded:
+            return turn("check the draft against the deterministic assertions before finishing", check_tool["name"], {}, draft)
+        return turn("required tools used; hand back the result", terminal, {}, draft)
+
+    # ------------------------------------------------------------------ #
+    # Persona 3c: team manager (matches app.team.MANAGER_SCHEMA). Delegates to
+    # both specialists in its first turn, then merges their reports.
+    # ------------------------------------------------------------------ #
+    def _manager_turn(self, user_message: str) -> dict[str, Any]:
+        reports: dict[str, dict[str, Any]] = {}
+        for specialist, body in re.findall(r'<report specialist="(\w+)">\n(.*?)\n</report>', user_message, re.DOTALL):
+            try:
+                reports[specialist] = json.loads(body)
+            except ValueError:
+                continue
+
+        blank = {
+            "draft_claim_number": None,
+            "draft_date_of_loss": None,
+            "draft_coverage_decision": None,
+            "draft_cited_exclusion_id": None,
+            "draft_excess_amount": None,
+            "draft_summary": None,
+            "draft_citations": [],
+        }
+        if not reports:
+            return {
+                "thought": "two independent jobs: policy research and claim-data validation; hand each to its specialist",
+                "action": "delegate",
+                "delegations": [
+                    {"specialist": "analyst", "task": "Find the policy wording that governs this claim and decide coverage, citing passages."},
+                    {"specialist": "clerk", "task": "Extract and validate the claim number and date of loss from the notes."},
+                ],
+                **blank,
+            }
+
+        analyst = (reports.get("analyst") or {}).get("fields") or {}
+        clerk = (reports.get("clerk") or {}).get("fields") or {}
+        return {
+            "thought": "both reports are in; merge them into the final summary",
+            "action": "finalize",
+            "delegations": [],
+            "draft_claim_number": clerk.get("claim_number") or analyst.get("claim_number"),
+            "draft_date_of_loss": clerk.get("date_of_loss") or analyst.get("date_of_loss"),
+            "draft_coverage_decision": analyst.get("coverage_decision"),
+            "draft_cited_exclusion_id": analyst.get("cited_exclusion_id"),
+            "draft_excess_amount": analyst.get("excess_amount"),
+            "draft_summary": analyst.get("summary"),
+            "draft_citations": list(analyst.get("citations") or []),
         }
 
     # ------------------------------------------------------------------ #

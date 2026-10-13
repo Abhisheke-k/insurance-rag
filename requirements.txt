@@ -22,3 +22,7 @@ anthropic>=0.40
 # Tests
 pytest>=8.0
 httpx>=0.27                  # required by fastapi.testclient
+
+# MCP (Week 9): tool server + client
+mcp>=2.3,<3
+jsonschema>=4.20           # host-side validation of tool arguments against the discovered schema

@@ -64,6 +64,9 @@ Interactive API docs are at `/docs`.
 | `app/generation.py` | Prompt assembly, the Claude call, and citation verification |
 | `app/rag.py` | Wires it together; owns the relevance gate |
 | `app/main.py` | FastAPI surface |
+| `app/mcp_server.py`, `app/mcp_access.py` | Week 9: the claims tools published over MCP (stdio or token-scoped HTTP), read-only, no model inside |
+| `app/mcp_client.py`, `app/mcp_vetting.py`, `app/mcp_agent.py` | Week 9: a blocking MCP client, vetting for tools you didn't write, and the claims agent running on *discovered* tools |
+| `app/team.py`, `app/metering.py` | Week 10: a manager + two specialists, and the call/token/cost meter used to race it against the single agent |
 | `frontend/index.html` | Self-contained UI, no build step |
 
 Nothing above `rag.py` knows which embedder or store is in use, so swapping
@@ -418,10 +421,35 @@ each trade-off is what generalises; the absolute numbers are not a benchmark.
 
 ---
 
+## Agents, MCP and multi-agent (Weeks 7-10)
+
+`POST /agent/process-claim` runs a think/act/observe claims agent (Week 7, hardened
+against prompt injection in Week 8). Weeks 9-10 build on it; none of this changes
+the HTTP API.
+
+- **MCP (Week 9).** `python -m app.mcp_server` publishes `search_policy`,
+  `check_assertions` and (opt-in) `lookup_exclusion_code` to any MCP host. The
+  agent in `app/mcp_agent.py` *discovers* its tools with `tools/list` -- add a tool
+  to the server and the agent offers it with no code change -- and screens what it
+  finds (`app/mcp_vetting.py`). The server has no model in it. Evidence, including
+  the raw protocol messages and the Week 8 attack replayed through MCP:
+  [`coursework/w9/results.md`](coursework/w9/results.md).
+- **Multi-agent (Week 10).** A manager and two specialists were raced against the
+  single agent on the same 33 claims for quality, speed, tokens and cost. Verdict:
+  keep the single agent -- the team ties on quality (by construction, offline), costs
+  6-30% more and adds a sequential model call. Details, scored predictions, when
+  multi-agent *is* worth it and the A2A decision:
+  [`coursework/w10/results.md`](coursework/w10/results.md).
+
+Everything in those two weeks was measured with the offline stub model; nothing was
+verified against a live Claude or GPT. Commands: [`docs/COMMANDS.md`](docs/COMMANDS.md#mcp-server-week-9).
+
+---
+
 ## Tests
 
 ```bash
-python -m pytest            # 70 passed, 2 skipped (live-model tests)
+python -m pytest            # 137 passed, 2 skipped (live-model tests)
 ```
 
 Hermetic by construction: the hashing embedder and the in-memory store mean no
@@ -434,7 +462,7 @@ behaviours:
 | A known question retrieves the right chunk in the top 5 | `tests/test_retrieval.py` — parametrised over all 8 eval questions, asserting on the *fact* the answer depends on rather than a chunk id, so it stays meaningful when boundaries move |
 | An out-of-scope question returns not-found, not a fabrication | `tests/test_answering.py` — both defences: the gate (asserting the model is *not* called), and citation verification (a fabricated passage number is discarded, and an uncited answer is withheld) |
 
-Plus `tests/test_api.py` for the HTTP contract. Two live-model tests
+Plus `tests/test_api.py` for the HTTP contract. Weeks 9-10 add `tests/test_mcp.py` (discovery, scoped HTTP access, vetting, parity with the in-process agent) and `tests/test_team.py` (metering and the multi-agent team). Two live-model tests
 (`-m integration`) run only with `ANTHROPIC_API_KEY` set: they disable the gate
 so the out-of-scope question really reaches Claude, and check that the in-scope
 answer cites only chunks that were actually retrieved.

@@ -1,0 +1,120 @@
+{
+  "1": {
+    "server": "claims-desk-policy",
+    "protocol": "2026-07-28",
+    "catalog": [
+      "search_policy",
+      "check_assertions"
+    ],
+    "runs": [
+      {
+        "id": "clear_flood",
+        "actions": [
+          "search_policy",
+          "check_assertions",
+          "finalize"
+        ],
+        "decision": "covered"
+      },
+      {
+        "id": "sequential_flood_e17",
+        "actions": [
+          "search_policy",
+          "check_assertions",
+          "finalize"
+        ],
+        "decision": "denied"
+      },
+      {
+        "id": "cyber_fire_writeback",
+        "actions": [
+          "search_policy",
+          "check_assertions",
+          "finalize"
+        ],
+        "decision": "covered"
+      },
+      {
+        "id": "malformed_claim_number",
+        "actions": [
+          "search_policy",
+          "check_assertions",
+          "finalize"
+        ],
+        "decision": "denied"
+      },
+      {
+        "id": "out_of_scope_theft",
+        "actions": [
+          "search_policy",
+          "check_assertions",
+          "finalize"
+        ],
+        "decision": "covered"
+      }
+    ]
+  },
+  "2": {
+    "inputs": 33,
+    "identical": 33,
+    "differing": [],
+    "median_ms": {
+      "search_direct": 0.23734999922453426,
+      "search_mcp": 2.763950000371551,
+      "check_direct": 0.02609999501146376,
+      "check_mcp": 1.1893500013684388,
+      "list": 1.301450000028126
+    },
+    "mean_claim_ms": {
+      "in_process": 6.059221212512277,
+      "mcp": 17.217599999805152
+    }
+  },
+  "3": {
+    "before": [
+      "search_policy",
+      "check_assertions"
+    ],
+    "after": [
+      "search_policy",
+      "check_assertions",
+      "lookup_exclusion_code"
+    ],
+    "source_hashes_unchanged": true,
+    "lookup_observation": "[1] filename: sample_endorsement_pack.pdf | page: 3-4 | section: ENDORSEMENT NO. 3 - BUSINESS INTERRUPTION AMENDMENTS > GENERAL CONDITIONS\nGENERAL CONDITIONS\n\n1. Cancellation. Either party may cancel this policy by giving 60 days written notice to the other at its last known address. Where the Insur",
+    "stub_actions": [
+      "search_policy",
+      "check_assertions",
+      "finalize"
+    ]
+  },
+  "4": {
+    "http_no_token": 401,
+    "http_wrong_token": 401,
+    "audit": [
+      "unauthenticated request rejected path=/mcp",
+      "unauthenticated request rejected path=/mcp",
+      "principal=partner-a tool=search_policy outcome=ok ms=63.2",
+      "DENIED principal=partner-a tool=check_assertions",
+      "principal=claims-desk tool=search_policy outcome=ok ms=2.7",
+      "principal=claims-desk tool=check_assertions outcome=ok ms=0.4"
+    ]
+  },
+  "5": {
+    "default_accepted": [
+      "policy_lookup",
+      "status_note"
+    ],
+    "status_note_withheld": true,
+    "rug_pull_rejected": true,
+    "edition2_accepted": [
+      "status_note"
+    ]
+  },
+  "6": {
+    "clean": "denied",
+    "attack": "covered",
+    "host_only": "denied",
+    "server_only": "denied"
+  }
+}

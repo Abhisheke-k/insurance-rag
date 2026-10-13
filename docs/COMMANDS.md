@@ -148,7 +148,8 @@ ANTHROPIC_API_KEY=sk-ant-...
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-Expected: **64 passed, 2 skipped** in about 5 seconds. The 2 skips are the
+Expected: **137 passed, 2 skipped** in about 10 seconds (the MCP tests start a few
+subprocesses and a loopback HTTP server). The 2 skips are the
 live-Claude tests, which self-skip without `ANTHROPIC_API_KEY`.
 
 The suite is hermetic — hashing embedder plus in-memory store — so it needs no
@@ -191,6 +192,8 @@ What each file covers:
 | `tests/test_api.py` | The HTTP contract for all endpoints |
 | `tests/test_agent.py` | The Week 7 claims agent: multi-step completion, safe stopping, tool dispatch, plus the Week 8 injection guard wired into `search_policy` |
 | `tests/test_injection_guard.py` | Week 8: flags instruction-shaped passages, leaves genuine policy wording alone (false-positive check against the real corpus) |
+| `tests/test_mcp.py` | Week 9: tool discovery, a second tool with no agent change, scoped bearer-token access over real HTTP, vetting a hostile server, 33-input parity with the in-process agent, no truncation of evidence |
+| `tests/test_team.py` | Week 10: metering and pricing; the manager + specialists team (tool scoping, hand-offs, real concurrency, safe stopping) |
 
 ---
 
@@ -228,6 +231,20 @@ What each file covers:
 # Week 8: indirect prompt injection attack + defense (writes the malicious
 # PDF, races guard-off against guard-on on the same poisoned corpus)
 .\.venv\Scripts\python.exe -m scripts.w8_injection_attack
+
+# Week 9: the evidence for the MCP Friday check (discovery, parity, second tool,
+# a peer's agent over HTTP, vetting a hostile server, the injection attack through MCP)
+.\.venv\Scripts\python.exe -m scripts.w9_mcp_demo
+
+# Week 9: the raw MCP messages, by hand and recorded through a logging proxy
+.\.venv\Scripts\python.exe -m scripts.w9_wire_trace
+
+# Week 10: race manager + two specialists against the single agent (offline stub;
+# add --repeats 5 for steadier wall-clock medians)
+.\.venv\Scripts\python.exe -m scripts.w10_team_vs_single
+
+# Week 10, LIVE: spends real money -- refuses to run without --yes
+.\.venv\Scripts\python.exe -m scripts.w10_team_vs_single --llm-provider anthropic --yes --repeats 1
 ```
 
 All four comparison/eval scripts use throwaway in-memory stores, so none of
@@ -237,7 +254,11 @@ them ever disturbs `chroma_db/`. `w7_agent_vs_workflow` writes its tables to
 `coursework/w8/trajectory_results.md` / `trajectory_raw.json`;
 `w8_injection_attack` writes to `coursework/w8/injection_results.md` /
 `injection_raw.json` and regenerates `data/malicious_endorsement_injection.pdf`
-(gitignored, like every other `data/*.pdf`).
+(gitignored, like every other `data/*.pdf`). `w9_mcp_demo` writes
+`coursework/w9/evidence.md` / `evidence_raw.json`, `w9_wire_trace` writes
+`coursework/w9/wire_trace.md`, and `w10_team_vs_single` writes
+`coursework/w10/race_tables.md` / `race_raw.json`; the W9/W10 scripts spawn their own
+tool servers on OS-assigned ports with throwaway in-memory stores.
 
 ---
 
@@ -368,3 +389,80 @@ $env:EMBEDDING_PROVIDER='sentence-transformers'
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
 # re-ingest, then re-tune MIN_RELEVANCE — see README §Retrieval
 ```
+
+---
+
+## MCP server (Week 9)
+
+`app/mcp_server.py` publishes the claims desk's tools over the Model Context
+Protocol so any MCP host can discover and call them. Read-only by design: there
+is no `ingest` tool. Why and how: [`coursework/w9/results.md`](../coursework/w9/results.md).
+
+```powershell
+# stdio: a host spawns this itself (you rarely run it by hand)
+.\.venv\Scripts\python.exe -m app.mcp_server --ingest data\sample_endorsement_pack.pdf
+
+# publish the exact-identifier lookup as well (the "second tool"); env MCP_TOOLS works too
+.\.venv\Scripts\python.exe -m app.mcp_server --tools search_policy,check_assertions,lookup_exclusion_code
+
+# HTTP, for other people's agents: needs bearer tokens, each scoped to the tools it may call
+$env:MCP_AUTH_TOKENS = '{"PUT-A-32+CHAR-TOKEN-HERE": {"name": "partner-a", "tools": ["search_policy"]}}'
+.\.venv\Scripts\python.exe -m app.mcp_server --transport http --port 8770 --ingest data\sample_endorsement_pack.pdf
+```
+
+Generate a token with `python -c "import secrets; print(secrets.token_urlsafe(32))"`.
+`"tools": null` grants every published tool. The HTTP server refuses to start
+without `MCP_AUTH_TOKENS`, listens on loopback by default, and logs one audit
+line per call (who, which tool, outcome, milliseconds -- never arguments). Put
+TLS in front of it before exposing it beyond localhost: bearer tokens travel in
+clear on plain HTTP. The default port 8765 was already in use on the machine this
+was built on; pass `--port`.
+
+**Which data it serves.** The server builds its own `RagService` from your
+`.env` / environment. To serve the documents you ingested through the API, give it
+the *same* `CHROMA_DIR` **and** `EMBEDDING_PROVIDER` as the API (ChromaDB pins vector
+dimensionality per collection -- see §2). For a throwaway server, use
+`FORCE_IN_MEMORY_STORE=1 EMBEDDING_PROVIDER=hashing CHROMA_DIR=<scratch dir>` plus `--ingest`.
+The server never uses a model: it overrides its own settings to the offline stub backend
+and clears any API keys inherited from the environment.
+
+**Connecting a real MCP host.** In a host that reads the standard `mcpServers`
+configuration (Claude Desktop's `claude_desktop_config.json`, or a project
+`.mcp.json`), something like the following. *I have not run this against a real host;*
+the repo's evidence uses `scripts/w9_peer_agent.py` instead.
+
+```json
+{
+  "mcpServers": {
+    "claims-desk": {
+      "command": "E:/insurance-rag/.venv/Scripts/python.exe",
+      "args": ["-m", "app.mcp_server", "--ingest", "E:/insurance-rag/data/sample_endorsement_pack.pdf"],
+      "cwd": "E:/insurance-rag",
+      "env": { "EMBEDDING_PROVIDER": "hashing", "FORCE_IN_MEMORY_STORE": "1", "CHROMA_DIR": "E:/insurance-rag/.tmp/mcp" }
+    }
+  }
+}
+```
+
+A host launches the server with a minimal environment, which is why `env` is
+spelled out. (Not every host honours `cwd`; if yours doesn't, use absolute paths.)
+
+**Trying it as "someone else's agent".** `scripts/w9_peer_agent.py` imports nothing
+from `app/` -- only the MCP SDK:
+
+```powershell
+# over stdio (it spawns the server itself)
+.\.venv\Scripts\python.exe scripts\w9_peer_agent.py --stdio `
+  --env EMBEDDING_PROVIDER=hashing --env FORCE_IN_MEMORY_STORE=1 --env CHROMA_DIR=.tmp\peer `
+  -- .\.venv\Scripts\python.exe -m app.mcp_server --ingest data\sample_endorsement_pack.pdf
+
+# over HTTP with a scoped token (use --token=VALUE: a token may start with '-')
+.\.venv\Scripts\python.exe scripts\w9_peer_agent.py --http http://127.0.0.1:8770/mcp `
+  --token=PUT-A-32+CHAR-TOKEN-HERE --probe check_assertions
+```
+
+**Using a third-party server safely.** Discovery makes plugging in someone else's
+server trivial, which is exactly why `ToolLoopAgent` takes a `VetPolicy`
+(`app/mcp_vetting.py`): an operator allowlist, a read-only requirement, an injection
+scan of every description and schema string, and definition pinning against rug
+pulls. `scripts/w9_untrusted_server.py` is a deliberately hostile server to try it on.

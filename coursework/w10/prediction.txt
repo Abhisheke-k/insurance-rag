@@ -1,0 +1,48 @@
+Week 10 -- predictions, written 2026-10-13 BEFORE running `python -m scripts.w10_team_vs_single`.
+(File mtime is the only timestamp; this repo's commit history is the stronger one -- commit this file
+before the race output if you want the ordering to be verifiable, as Weeks 5 and 6 did.)
+
+DISCLOSURE. An earlier smoke test (a scratch script, not kept) ran single / team-lean / team-full over
+the 5 labelled claims only, and I saw its headline: team calls = 2x single's; team-lean input tokens
+slightly BELOW single's, output tokens ~1.7x, cost ~+15%; team-full input ~+28% over team-lean. Those
+are therefore NOT predictions. The claims below are about what that smoke run did not show: the 28
+extra claims, the fixed-workflow rung, wall-clock, path quality, the judge, and the live-model case.
+
+PREDICTIONS (each falsifiable by race_tables.md / race_raw.json):
+
+P1  Token ratio holds at n=33. Over all 33 claims, team-lean TOTAL tokens per claim are within +/-10%
+    of the single agent's, and team-lean COST per claim is between 1.05x and 1.30x the single
+    agent's (output tokens are priced 5x input, and the team emits ~1.7x the output).
+
+P2  The cost ladder is monotone. fixed < single < team-lean < team-full on cost per claim, and the
+    fixed workflow costs at most 40% of the single agent per claim.
+
+P3  Full-context hand-offs cost real money. team-full total tokens are between 1.15x and 1.50x the
+    single agent's.
+
+P4  Wall-clock goes the OTHER way from the smoke run. The smoke run seemed to show the team faster;
+    I believe that was a cold-start artifact (single ran first). With warm-up and interleaving, the
+    single agent's median wall-clock per claim is LOWER than team-lean's, by 1.2x-2.5x, because the
+    stub model is free and what remains is orchestration (more tools/list round trips, a thread pool,
+    more prompts built).
+
+P5  Critical path: single = 3.0 sequential model calls per claim, team = 4.0 (parallel specialists),
+    i.e. the team is never faster on the structural latency measure.
+
+P6  Quality parity (plumbing check, not evidence about real models). The team gives the SAME coverage
+    decision as the single agent on 33/33 claims; deterministic-assertion pass rates are equal; the
+    judge-v2 pass counts are equal; path accuracy on the 5 labelled claims is equal.
+
+P7  Nothing in the team's structure helps on this corpus. I expect the verdict to be "keep the single
+    agent", and I expect that verdict to survive when specialists are priced on a cheaper model: team
+    with Haiku-class specialists will still cost >= 0.5x of the single agent's cost on the SAME
+    expensive manager model, because the manager's two calls re-send the notes plus every report.
+
+P8  (Live model -- UNTESTABLE here, no API key.) With a real model, the team will not beat the single
+    agent on decision accuracy by more than one claim out of the 5 labelled, and will cost more per
+    claim than the single agent. Re-run with --llm-provider anthropic --yes --repeats 3 to test it.
+
+HOW I'D BE WRONG (what would change the verdict): the team's cost advantage appearing only if a much
+cheaper model can do the specialists' jobs at equal quality -- a quality question this offline run
+cannot answer -- or if claims were long enough that the single agent's growing scratchpad dominated
+its cost (here the notes are ~60 tokens and the passages ~2.5k, so it does not).
