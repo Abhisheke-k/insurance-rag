@@ -716,6 +716,9 @@ class StubProvider(LLMProvider):
         failed_prefixes = ("rejected:", "tool error:", "unrecognized action")
         succeeded = {action for action, observation in steps if not observation.startswith(failed_prefixes)}
 
+        if role == "claims_triage":
+            return self._triage_turn(notes, steps, terminal)
+
         search_tool = next((t for t in catalog if self._is_search_tool(t)), None)
         check_tool = next((t for t in catalog if "claim_number" in ((t.get("input_schema") or {}).get("properties") or {})), None)
 
@@ -764,6 +767,183 @@ class StubProvider(LLMProvider):
         if check_tool and role in ("claims_agent", "claims_clerk") and check_tool["name"] not in succeeded:
             return turn("check the draft against the deterministic assertions before finishing", check_tool["name"], {}, draft)
         return turn("required tools used; hand back the result", terminal, {}, draft)
+
+
+    # ------------------------------------------------------------------ #
+    # Persona 3d: claims triage (role "claims_triage", Week 12).
+    #
+    # Works the way a careful but fallible junior would, over the five triage tools: look the policy up, check it was in
+    # force, search the wording, get the three figures, refer. It never sets a coverage decision -- there is no field for
+    # one -- and it is deliberately NAIVE in four places, each a plausible real failure that the integrated eval has to find
+    # (rates are artefacts of how many such FNOLs the cases contain, not measurements of any real model):
+    #   1. dates: it takes the FIRST date in the text as the loss date, so "Reported 3 March 2025 ... loss on 11 August 2024"
+    #      is resolved against the wrong day;
+    #   2. trajectory: it skips coverage_in_force when the FNOL says the policy "is active";
+    #   3. wording choice: among the passages it is shown it relies on the best-matching one, whichever edition that is;
+    #   4. tone: asked to "confirm it is covered" it writes the word, in its referral note and in its closing note.
+    # It also puts the start of the narrative into its wording query, which is how personal details reach a tool argument
+    # when nothing upstream removes them.
+    # ------------------------------------------------------------------ #
+    _TRIAGE_MONTHS = (
+        "January|February|March|April|May|June|July|August|September|October|November|December"
+    )
+    _TRIAGE_DATE_RE = re.compile(
+        r"\b(\d{1,2})(?:st|nd|rd|th)?\s+(" + _TRIAGE_MONTHS + r")\s+(\d{4})\b|\b(\d{4})-(\d{2})-(\d{2})\b"
+    )
+
+    @classmethod
+    def _first_date(cls, text: str) -> str | None:
+        match = cls._TRIAGE_DATE_RE.search(text)
+        if not match:
+            return None
+        if match.group(4):
+            return f"{match.group(4)}-{match.group(5)}-{match.group(6)}"
+        month = cls._TRIAGE_MONTHS.split("|").index(match.group(2)) + 1
+        return f"{int(match.group(3)):04d}-{month:02d}-{int(match.group(1)):02d}"
+
+    @staticmethod
+    def _json_or_none(text: str) -> dict[str, Any] | None:
+        try:
+            value = json.loads(text)
+        except (TypeError, ValueError):
+            return None
+        return value if isinstance(value, dict) else None
+
+    def _triage_turn(self, notes: str, steps: list[tuple[str, str]], terminal: str) -> dict[str, Any]:
+        failed = ("rejected:", "tool error:", "unrecognized action")
+        attempted = [action for action, _ in steps]
+        ok = {action: obs for action, obs in steps if not obs.startswith(failed)}
+        lowered = notes.lower()
+
+        claim = (re.search(r"\bCLM-\d{4}-\d{5}\b", notes) or [None])[0]
+        policy_in_text = (re.search(r"\b(?!CLM-)[A-Z]{3}-\d{4}-\d{5}\b", notes) or [None])[0]
+        reference = claim or policy_in_text
+        loss_date = self._first_date(notes)
+        peril = "flood" if "flood" in lowered else "other"
+        in_zone: bool | None = None
+        if re.search(r"(?:not|outside)\s+(?:in\s+|within\s+|of\s+)?(?:a\s+|the\s+)?flood zone|zone 1\b", lowered):
+            in_zone = False
+        elif re.search(r"flood zone|zone [23]\b", lowered):
+            in_zone = True
+        asserts_active = bool(re.search(r"policy (?:is|remains|was) (?:still )?(?:active|live|valid|current|in force)", lowered))
+        wants_confirmation = bool(re.search(r"confirm\w*[^.]{0,40}cover|tell (?:me|us|them|the claimant)[^.]{0,40}cover", lowered))
+
+        blank = {
+            "draft_claim_number": None, "draft_date_of_loss": None, "draft_coverage_decision": None,
+            "draft_cited_exclusion_id": None, "draft_excess_amount": None, "draft_summary": None, "draft_citations": [],
+        }
+
+        def call(thought: str, action: str, arguments: dict[str, Any], draft: dict[str, Any] | None = None) -> dict[str, Any]:
+            return {"thought": thought, "action": action, "tool_input": json.dumps(arguments), **(draft or blank)}
+
+        lookup = self._json_or_none(ok.get("lookup_policy", ""))
+        in_force = self._json_or_none(ok.get("coverage_in_force", ""))
+        limits = self._json_or_none(ok.get("get_limits", ""))
+        wording_obs = ok.get("search_wording", "")
+        policy_number = (lookup or {}).get("policy_number")
+
+        # --- the wording the persona relies on: the best match among whatever it was shown -------------
+        passages = _parse_passages(wording_obs) if wording_obs else []
+        chosen = None
+        if passages:
+            scored = _score_passages(passages, notes)
+            with_window = [p for p in scored if re.search(r"within\s+\d+\s+consecutive\s+days", p.body)]
+            chosen = (with_window or scored)[0]
+        window = None
+        edition_label = None
+        if chosen is not None:
+            found_window = re.search(r"within\s+(\d+)\s+consecutive\s+days", chosen.body)
+            window = int(found_window.group(1)) if found_window else None
+            tagged = re.search(r"\| wording: ([^|]+?)(?:;|$|\n)", chosen.header)
+            in_text = re.search(r"edition\s+(\d{2}-\d{2})", chosen.body)
+            edition_label = tagged.group(1).strip() if tagged else (f"edition {in_text.group(1)} (as named in the text)" if in_text else None)
+        gap = None
+        gap_match = re.search(r"(\d+)\s+days?\s+(?:after|since|following)\s+(?:the\s+|an\s+)?(?:earlier|previous|first|prior)", lowered)
+        if gap_match:
+            gap = int(gap_match.group(1))
+
+        def referral(codes: list[str], facts: str, refs: list[str] | None = None, priority: str = "routine") -> dict[str, Any]:
+            arguments: dict[str, Any] = {"claim_number": claim, "reason_codes": codes, "priority": priority, "facts": facts}
+            if policy_number:
+                arguments["policy_number"] = policy_number
+            if loss_date:
+                arguments["loss_date"] = loss_date
+            if refs:
+                arguments["wording_refs"] = refs
+            return call("refer the claim to an adjuster with the facts gathered", "refer_to_adjuster", arguments)
+
+        referred = "refer_to_adjuster" in ok
+        last_refer_failed = any(a == "refer_to_adjuster" and obs.startswith(failed) for a, obs in steps) and not referred
+        note = "Surfaced the wording and figures for the adjuster."
+        if wants_confirmation and not last_refer_failed:
+            note += " The loss is covered."  # slip 4: this is what the compliance guard exists to catch
+
+        def closing_draft() -> dict[str, Any]:
+            cited = [chosen.number] if chosen is not None else []
+            parts = [f"Policy {policy_number or 'unknown'}"] if policy_number else []
+            if edition_label:
+                parts.append(f"wording relied on: {edition_label}")
+            if window is not None and gap is not None:
+                parts.append(f"earlier flood stated {gap} days before; E-17 window in that wording is {window} days")
+            text = "; ".join(parts) + ". " if parts else ""
+            return {
+                **blank,
+                "draft_claim_number": claim,
+                "draft_date_of_loss": loss_date,
+                "draft_cited_exclusion_id": "E-17" if chosen is not None and "E-17" in chosen.body else None,
+                "draft_summary": text + note,
+                "draft_citations": cited,
+            }
+
+        if referred:
+            return call("referral queued; hand back the result", terminal, {}, closing_draft())
+
+        if "lookup_policy" not in attempted and reference:
+            return call("find the policy this claim sits on", "lookup_policy", {"reference": reference})
+        if lookup is None or lookup.get("found") is False:
+            return referral(["policy_not_found"], "The claim or policy reference did not resolve to a policy in the registry.")
+        if loss_date is None:
+            return referral(["insufficient_information"], "The notice gives no date of loss that could be read.")
+        if any(obs.startswith("rejected:") and "date_ambiguous" in obs for _, obs in steps):
+            # told by the host that the notice has no single loss date: stop searching and refer, as the brief says to
+            return referral(["date_ambiguous"], "The notice gives several dates and the date of loss could not be determined.")
+
+        if "coverage_in_force" not in attempted and not asserts_active:  # slip 2
+            return call("check the policy was in force on the date of loss", "coverage_in_force", {"policy_number": policy_number, "loss_date": loss_date})
+        if in_force is not None and in_force.get("in_force") is False:
+            return referral(["not_in_force"], f"The policy record shows it was not in force on {loss_date}: {in_force.get('detail')}.", priority="routine")
+        if in_force is not None and in_force.get("in_force") is None:
+            return referral(["policy_not_found"], "The in-force check could not be completed for this policy.")
+
+        if not lookup.get("wording_on_file"):
+            return referral(["wording_not_on_file"], "No policy wording is on file for this policy, so none was searched.")
+
+        if "search_wording" not in attempted:
+            query = f"{notes[:160]} flood exclusion sequential water intrusion E-17 consecutive days" if peril == "flood" else notes[:200]
+            return call(
+                "retrieve the wording in force on the date of loss", "search_wording",
+                {"query": query, "policy_number": policy_number, "loss_date": loss_date, "top_k": 4},
+            )
+        if "get_limits" not in attempted:
+            arguments = {"policy_number": policy_number, "loss_date": loss_date, "peril": peril}
+            if in_zone is not None:
+                arguments["in_flood_zone"] = in_zone
+            return call("get the deductible, sub-limit and policy limit as three separate figures", "get_limits", arguments)
+
+        codes: list[str] = []
+        if window is not None and gap is not None and gap <= window:
+            codes.append("exclusion_arguable")
+        if limits and limits.get("unresolved"):
+            codes.append("limits_unresolved")
+        codes = codes or ["routine_review"]
+        facts = f"Date of loss {loss_date}."
+        if edition_label:
+            facts += f" Wording relied on: {edition_label}."
+        if window is not None and gap is not None:
+            facts += f" Earlier flood stated {gap} days before; the window in that wording is {window} days."
+        if wants_confirmation and not last_refer_failed:
+            facts += " This loss is covered."  # slip 4, first attempt: the server refuses it and the persona retries clean
+        return referral(codes, facts, [edition_label] if edition_label else None)
 
     # ------------------------------------------------------------------ #
     # Persona 3c: team manager (matches app.team.MANAGER_SCHEMA). Delegates to
@@ -861,6 +1041,8 @@ class StubProvider(LLMProvider):
     _LETTERED_ITEM_RE = re.compile(r"\(([a-h])\)\s+\S")
 
     def _judge(self, system: str, user_message: str) -> dict[str, Any]:
+        if "<triage_card>" in user_message:
+            return self._judge_fit(system, user_message)
         # v1: checks only that the summary's coverage_decision agrees with whether
         # the CITED PASSAGE carries a negation cue -- it never independently
         # re-derives the answer from the notes, cannot tell a correctly-negated
@@ -947,10 +1129,73 @@ class StubProvider(LLMProvider):
         return {"pass_criterion": pass_criterion, "rationale": rationale}
 
 
+    # ------------------------------------------------------------------ #
+    # Persona 4: the integrated-system judge (Week 12). Criterion FIT -- see coursework/w12/judge_integrated.txt.
+    #
+    # Reads the notice and the clause topic of each cited excerpt, the way the prompt tells it to. Version 1 of the prompt
+    # reasons about PERIL and CLAUSE TOPIC only. A later version adds a paragraph about earlier events; the stub switches that
+    # rule on when the paragraph is in the prompt it is given, so "iterating the judge" is editing the prompt file, as in Week 6.
+    # ------------------------------------------------------------------ #
+    _PRIOR_EVENT_MARKER = "engaged only if the notice states an earlier event"
+    _SECOND_EVENT_RE = re.compile(
+        r"second (?:flood|time)|earlier flood|previous flood|prior flood|\bagain\b|after the earlier|flooded twice|twice (?:this|in)", re.IGNORECASE
+    )
+
+    def _judge_fit(self, system: str, user_message: str) -> dict[str, Any]:
+        notice_match = re.search(r"<fnol>\n(.*?)\n</fnol>", user_message, re.DOTALL)
+        card_match = re.search(r"<triage_card>\n(.*?)\n</triage_card>", user_message, re.DOTALL)
+        notice = (notice_match.group(1) if notice_match else "").lower()
+        raw_notice = notice_match.group(1) if notice_match else ""
+        card = self._json_or_none(card_match.group(1) if card_match else "") or {}
+        excerpts = [str(w.get("excerpt", "")) for w in card.get("wording", [])]
+        joined = " ".join(excerpts).lower()
+        if not excerpts:
+            return {"pass_criterion": False, "rationale": "nothing is cited, so there is no wording to fit to the notice"}
+
+        has_e17 = "e-17" in joined or "second or subsequent" in joined
+        has_bi = "waiting period" in joined or "indemnity period" in joined
+        has_flood = "flood" in joined
+        notice_second = bool(self._SECOND_EVENT_RE.search(raw_notice))
+        notice_flood = "flood" in notice
+        notice_bi = bool(re.search(r"business interruption|waiting period|interruption|shut for", notice))
+        notice_fire = bool(re.search(r"\bfire\b", notice)) and not notice_flood
+
+        if notice_second:
+            ok = has_e17
+            why = "a second-flood notice is engaged by the sequential-flood clause" if ok else "a second-flood notice, but no sequential-flood clause is cited"
+        elif notice_bi:
+            ok = has_bi
+            why = "a business-interruption notice is engaged by the waiting-period clause" if ok else "a business-interruption notice, but no business-interruption clause is cited"
+        elif notice_flood:
+            ok = has_flood
+            why = "a flood notice with flood wording cited" if ok else "a flood notice, but no flood wording is cited"
+            if ok and has_e17 and self._PRIOR_EVENT_MARKER in " ".join(system.lower().split()):
+                ok = False  # the version-2 paragraph: a clause about a later event is not engaged without a stated earlier event
+                why = "the cited clause concerns a second or subsequent event but the notice states no earlier event"
+        elif notice_fire:
+            ok = "fire" in joined or "explosion" in joined or not has_flood
+            why = "a fire notice with non-flood wording cited" if ok else "a fire notice, but only flood wording is cited"
+        else:
+            ok = True
+            why = "no specific topic in the notice to contradict the citation"
+        return {"pass_criterion": ok, "rationale": why}
+
+
 # --------------------------------------------------------------------------- #
 # Resolution
 # --------------------------------------------------------------------------- #
 def build_llm_provider(settings: Settings) -> LLMProvider:
+    """Resolve the backend named by ``LLM_PROVIDER``, wrapped so every call is traceable.
+
+    The wrapper (``app.observability.TracedProvider``) records a generation span -- tokens,
+    cost, prompt version -- on whatever trace is active and is a pass-through otherwise.
+    """
+    from app.observability import TracedProvider  # noqa: PLC0415 -- observability imports this module
+
+    return TracedProvider(_resolve_llm_provider(settings), price_model=settings.answer_model)
+
+
+def _resolve_llm_provider(settings: Settings) -> LLMProvider:
     """Resolve the backend named by ``LLM_PROVIDER``.
 
     'auto' tries Anthropic, then OpenAI, then falls back to the deterministic

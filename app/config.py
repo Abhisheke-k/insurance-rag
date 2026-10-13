@@ -12,7 +12,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 EmbeddingProvider = Literal["auto", "voyage", "sentence-transformers", "hashing"]
@@ -80,6 +80,17 @@ class Settings(BaseSettings):
     # Retrieval
     # ------------------------------------------------------------------ #
     top_k: int = Field(default=5, ge=1, le=50)
+    claim_top_k: int = Field(
+        default=4,
+        ge=1,
+        le=50,
+        description=(
+            "How many passages a claim summary / claims-agent search retrieves (``/ask`` keeps TOP_K). 4, not 5: the governing "
+            "passage is still in the top 4 for 99% of claims (98% at 3, 84% at 2) while input tokens per request fall ~16%. "
+            "Measured by scripts/w11_cost_improvement.py; k=3 was rejected because the governing passage is then missing for "
+            "54% of regulatory-fine claims (17% at k=5)."
+        ),
+    )
     min_relevance: float = Field(
         default=0.12,
         ge=-1.0,
@@ -92,6 +103,17 @@ class Settings(BaseSettings):
             "MiniLM cosines sit much higher -- re-tune before trusting the gate on those."
         ),
     )
+    min_relevance_hybrid: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "The relevance floor used instead of MIN_RELEVANCE when RETRIEVAL_MODE is hybrid_bm25_rrf. Hybrid mode "
+            "reports fused Reciprocal-Rank-Fusion scores (at most ~0.033 with k=60), not cosines, so the cosine-calibrated "
+            "MIN_RELEVANCE (0.12) rejected *every* question -- found by the Week 11 traces. 0 disables the gate: it is "
+            "a cost optimisation, and citation verification is what prevents fabricated answers."
+        ),
+    )
     retrieval_mode: RetrievalMode = Field(
         default="dense",
         description=(
@@ -99,6 +121,31 @@ class Settings(BaseSettings):
             "'hybrid_bm25_rrf' -- BM25 over chunk text, fused with dense ranks via "
             "Reciprocal Rank Fusion (k=60). See app/hybrid_retrieval.py and the Week 4 "
             "retrieval writeup in coursework/w4/."
+        ),
+    )
+    carry_clause_stem: bool = Field(
+        default=True,
+        description=(
+            "When a retrieved chunk is a continuation of a list clause, prefix it with the clause's lead-in "
+            "(app/clause_stem.py). Without it an exclusion's items can arrive stripped of the words 'this policy "
+            "excludes ... the following:' and read as covered. CARRY_CLAUSE_STEM=false is the instant rollback."
+        ),
+    )
+    version_filter: bool = Field(
+        default=True,
+        description=(
+            "Week 12. When a loss date is supplied, drop wording that was not in force on that date (app/versions.py) and tag what "
+            "remains with its edition. VERSION_FILTER=false is the pre-fix behaviour -- every edition is offered and the model "
+            "picks -- kept as a switch so the failure it prevents can be reproduced (the closed loop in coursework/w12/)."
+        ),
+    )
+    version_pool_factor: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        description=(
+            "Loss-date retrieval fetches factor*k candidates, narrows them to the wording in force, then keeps k -- so that "
+            "dropping a superseded edition does not leave the answer short a passage."
         ),
     )
     rrf_k: int = Field(default=60, ge=1, description="RRF fusion constant k in 1/(k+rank).")
@@ -147,6 +194,17 @@ class Settings(BaseSettings):
     )
 
     # ------------------------------------------------------------------ #
+    # Observability (Week 11)
+    # ------------------------------------------------------------------ #
+    trace_log_path: Path | None = Field(
+        default=Path("./logs/traces.jsonl"),
+        description=(
+            "Where per-request traces are appended, one JSON line each (app/observability.py). "
+            "Set TRACE_LOG_PATH= (empty) to turn trace writing off; spans still run, nothing is written."
+        ),
+    )
+
+    # ------------------------------------------------------------------ #
     # Service
     # ------------------------------------------------------------------ #
     max_upload_bytes: int = Field(default=50 * 1024 * 1024, ge=1024)
@@ -163,6 +221,11 @@ class Settings(BaseSettings):
                 f"CHUNK_SIZE ({self.chunk_size})"
             )
         return self
+
+    @field_validator("trace_log_path", mode="before")
+    @classmethod
+    def _empty_trace_path_means_off(cls, value: object) -> object:
+        return None if isinstance(value, str) and not value.strip() else value
 
     @property
     def registry_path(self) -> Path:

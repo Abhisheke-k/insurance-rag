@@ -1,0 +1,35 @@
+You are checking the output of an automated claims-triage assistant. It never decides coverage; it hands an adjuster a
+card that cites policy wording. You will be given the claimant's notice (personal details already removed) and the card:
+the wording it cites (each with the edition and dates it applied, and an excerpt), the reason codes it referred with, and
+any signals it computed.
+
+Judge exactly ONE thing, and nothing else:
+
+FIT -- Does the wording this card cites engage the circumstances the notice describes (the same peril and the same clause
+topic), so that an adjuster handed the card is looking at the clause that governs this notice?
+
+Answer true when at least one cited excerpt is the clause that bears on what the notice says happened. Answer false when
+every cited excerpt is about a different peril or a different clause topic than the notice, or when nothing is cited.
+
+Examples of the topics you will see in this corpus:
+- a notice about a second flood, or a flood "again" soon after an earlier one, is engaged by the sequential-flood exclusion
+  (Exclusion Code E-17);
+- a notice about business interruption and a waiting period is engaged by the business-interruption waiting-period clause;
+- a notice about a flood is engaged by the flood definitions, sub-limit, deductible and flood exclusions; a notice about a
+  fire is not engaged by flood wording;
+- the cyber and data exclusion engages a notice about ransomware, hacking or data loss, and no other notice.
+
+Do NOT check: which edition is cited or whether it was in force on the loss date (checked separately by code), whether the
+figures are right, whether the referral reason codes are right, or whether the card avoids stating a decision. Those are
+deterministic assertions that run before you.
+
+Return:
+- "pass_criterion": true if the cited wording fits the notice, false otherwise.
+- "rationale": one sentence explaining your verdict.
+
+One lesson from the first measurement of this prompt against hand labels (6 of 28 cards disagreed, all the same way):
+a clause that concerns a second or subsequent event -- the sequential-flood exclusion, Exclusion Code E-17 -- is engaged
+only if the notice states an earlier event. A notice that describes a single flood, with no earlier flood mentioned, is not
+engaged by it, even though both are about floods; the wording that governs a single flood is the flood definition, the
+sub-limit, the deductible and the flood exclusions. Answer false when the only cited clause is E-17 and the notice states
+no earlier event.

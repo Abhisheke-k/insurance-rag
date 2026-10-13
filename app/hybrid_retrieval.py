@@ -33,7 +33,7 @@ from __future__ import annotations
 
 import re
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Sequence
 
 from app.models import RetrievedChunk
@@ -224,20 +224,8 @@ def hybrid_retrieve(
     # harness, the inspection view) see the number retrieval actually ranked by
     # in this mode, rather than a stale cosine similarity from the dense pass.
     fused_scores = {chunk.chunk_id: score for chunk, score in fused}
-    hits = [
-        RetrievedChunk(
-            chunk_id=c.chunk_id,
-            doc_id=c.doc_id,
-            filename=c.filename,
-            text=c.text,
-            page=c.page,
-            page_end=c.page_end,
-            section_path=c.section_path,
-            clause_label=c.clause_label,
-            score=fused_scores.get(c.chunk_id, 0.0),
-        )
-        for c in hits
-    ]
+    # replace(), not a field-by-field copy: a field added to RetrievedChunk later must not be silently dropped here
+    hits = [replace(c, score=fused_scores.get(c.chunk_id, 0.0)) for c in hits]
 
     return HybridRetrieval(
         hits=hits,

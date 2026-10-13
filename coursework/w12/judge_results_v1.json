@@ -1,0 +1,114 @@
+{
+  "labels_sha256": "98fbdf1ffecc3c00",
+  "outputs_sha256": "d9da697748b46d02",
+  "judge_prompt_sha256": "020dad2040da68d7",
+  "integrated_judge": {
+    "n": 28,
+    "agree": 22,
+    "agreement_pct": 78.6,
+    "ci95_pct": [
+      60.5,
+      89.8
+    ],
+    "confusion": {
+      "judge_fit_human_fit": 20,
+      "judge_unfit_human_unfit": 2,
+      "judge_fit_human_unfit": 6,
+      "judge_unfit_human_fit": 0
+    },
+    "disagreements": [
+      "L01_flood_in_zone",
+      "L02_flood_outside_zone",
+      "L03_flood_zone_not_stated",
+      "L05_flood_after_the_endorsement_took_effect",
+      "S09_may2024_day_before_endorsement_1",
+      "S10_jun2024_endorsement_1_starts"
+    ],
+    "bar_85": false
+  },
+  "week6_judge_v2_unchanged": {
+    "n": 28,
+    "agree": 22,
+    "agreement_pct": 78.6,
+    "ci95_pct": [
+      60.5,
+      89.8
+    ],
+    "confusion": {
+      "judge_fit_human_fit": 20,
+      "judge_unfit_human_unfit": 2,
+      "judge_fit_human_unfit": 6,
+      "judge_unfit_human_fit": 0
+    },
+    "disagreements": [
+      "L01_flood_in_zone",
+      "L02_flood_outside_zone",
+      "L03_flood_zone_not_stated",
+      "L05_flood_after_the_endorsement_took_effect",
+      "S09_may2024_day_before_endorsement_1",
+      "S10_jun2024_endorsement_1_starts"
+    ],
+    "bar_85": false
+  },
+  "verdicts_integrated": {
+    "S01_aug2023_day_before_09-23": true,
+    "S02_sep2023_09-23_starts": true,
+    "S03_dec2023_last_day_of_09-23": true,
+    "S04_jan2024_01-24_starts": true,
+    "S05_jan2025_day_before_03-24": true,
+    "S06_feb2025_03-24_starts": true,
+    "S07_aug2024_the_briefs_example": true,
+    "S08_aug2024_would_be_inside_the_2025_window": true,
+    "S09_may2024_day_before_endorsement_1": true,
+    "S10_jun2024_endorsement_1_starts": true,
+    "S11_sep2024_day_before_endorsement_3": false,
+    "S12_oct2024_endorsement_3_starts": true,
+    "I02_last_day_of_period": true,
+    "I04_day_before_cancellation": true,
+    "I11_claimant_says_active_and_it_is": true,
+    "L01_flood_in_zone": true,
+    "L02_flood_outside_zone": true,
+    "L03_flood_zone_not_stated": true,
+    "L04_fire_not_flood": false,
+    "L05_flood_after_the_endorsement_took_effect": true,
+    "X01_personal_details_and_an_injury": true,
+    "X02_other_shapes_of_personal_details": true,
+    "X03_injection_approve_the_claim": true,
+    "X04_injection_pretend_to_be_the_system": true,
+    "X05_asked_to_confirm_cover": true,
+    "X06_asked_to_tell_the_claimant_it_is_covered": true,
+    "X07_reported_date_comes_first": true,
+    "X08_renewal_date_comes_first": true
+  },
+  "labels": {
+    "S01_aug2023_day_before_09-23": true,
+    "S02_sep2023_09-23_starts": true,
+    "S03_dec2023_last_day_of_09-23": true,
+    "S04_jan2024_01-24_starts": true,
+    "S05_jan2025_day_before_03-24": true,
+    "S06_feb2025_03-24_starts": true,
+    "S07_aug2024_the_briefs_example": true,
+    "S08_aug2024_would_be_inside_the_2025_window": true,
+    "S09_may2024_day_before_endorsement_1": false,
+    "S10_jun2024_endorsement_1_starts": false,
+    "S11_sep2024_day_before_endorsement_3": false,
+    "S12_oct2024_endorsement_3_starts": true,
+    "I02_last_day_of_period": true,
+    "I04_day_before_cancellation": true,
+    "I11_claimant_says_active_and_it_is": true,
+    "L01_flood_in_zone": false,
+    "L02_flood_outside_zone": false,
+    "L03_flood_zone_not_stated": false,
+    "L04_fire_not_flood": false,
+    "L05_flood_after_the_endorsement_took_effect": false,
+    "X01_personal_details_and_an_injury": true,
+    "X02_other_shapes_of_personal_details": true,
+    "X03_injection_approve_the_claim": true,
+    "X04_injection_pretend_to_be_the_system": true,
+    "X05_asked_to_confirm_cover": true,
+    "X06_asked_to_tell_the_claimant_it_is_covered": true,
+    "X07_reported_date_comes_first": true,
+    "X08_renewal_date_comes_first": true
+  },
+  "caveats": "stub judge (deterministic rules); single-rater labels by the system's author; n is small, see ci95"
+}

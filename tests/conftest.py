@@ -121,6 +121,7 @@ def settings(tmp_path: Path) -> Settings:
         # in-scope questions score 0.13-0.36, out-of-scope 0.06-0.10.
         min_relevance=0.12,
         anthropic_api_key=None,
+        trace_log_path=None,  # tests never write a log
     )
 
 

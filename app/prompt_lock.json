@@ -1,0 +1,42 @@
+{
+  "ask-answer": {
+    "sha256": "59e306ec1bac0a59b91d23a022c9206b306fd7e7ae2bec33ea44855627b2bc8d",
+    "version": "ask-answer-v2"
+  },
+  "claim-summary": {
+    "sha256": "8a7969c44b7f5d38e0edb7b04ecab2ed71b841a18b1db016b13cdd84933b25a1",
+    "version": "claim-summary-v2"
+  },
+  "claims-agent": {
+    "sha256": "c633e8a59bcc74fce1e99263ef9f8a29b70bfd1053f6a4ca5767f073a9e2f121",
+    "version": "claims-agent-v2"
+  },
+  "judge": {
+    "sha256": "c74195cf2a36993861b4ad9b2bf2ce11676d66a24ae708af3b965ccc7a13cca0",
+    "version": "judge-v2"
+  },
+  "judge-integrated": {
+    "sha256": "020dad2040da68d7f0e046a6657fbd86e165177aaa1d36ab13b1d1662eeb4422",
+    "version": "judge-integrated-v3"
+  },
+  "role:claims_agent": {
+    "sha256": "ba7c58ddba83d18cf17f5784618de52686cd9fd59092126b2525d4f561e94cab",
+    "version": "role-claims_agent-v2"
+  },
+  "role:claims_clerk": {
+    "sha256": "6d259c2216d256749f999b3d5fd1b0e30f23c331a817f55eabbd4c8a9c715de7",
+    "version": "role-claims_clerk-v1"
+  },
+  "role:claims_triage": {
+    "sha256": "1dc9780abcbcbcd1b17d2365c3b6a11f580265205083375888ad2ce4d954a9bd",
+    "version": "role-claims_triage-v1"
+  },
+  "role:coverage_analyst": {
+    "sha256": "97b7905118deb0831d87455317e981371ddddef98b1ee62f0df8ad782b0195d5",
+    "version": "role-coverage_analyst-v2"
+  },
+  "role:manager": {
+    "sha256": "d3629be21816ddc57b4a046621abf660ebff92803cc8880328cd0562999bcbe7",
+    "version": "role-manager-v1"
+  }
+}

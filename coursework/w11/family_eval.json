@@ -1,0 +1,230 @@
+{
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "rows": [
+    {
+      "family": "cyber_cloud_outage",
+      "n": 24,
+      "wrong_before": 24,
+      "wrong_after": 3,
+      "before": {
+        "covered": 24
+      },
+      "after": {
+        "denied": 21,
+        "covered": 3
+      }
+    },
+    {
+      "family": "cyber_ransomware",
+      "n": 40,
+      "wrong_before": 40,
+      "wrong_after": 11,
+      "before": {
+        "covered": 40
+      },
+      "after": {
+        "covered": 11,
+        "denied": 29
+      }
+    },
+    {
+      "family": "e17_within_window",
+      "n": 48,
+      "wrong_before": 5,
+      "wrong_after": 5,
+      "before": {
+        "denied": 43,
+        "covered": 5
+      },
+      "after": {
+        "denied": 43,
+        "covered": 5
+      }
+    },
+    {
+      "family": "exclusion_construction",
+      "n": 32,
+      "wrong_before": 5,
+      "wrong_after": 5,
+      "before": {
+        "covered": 5,
+        "denied": 27
+      },
+      "after": {
+        "covered": 5,
+        "denied": 27
+      }
+    },
+    {
+      "family": "exclusion_livestock",
+      "n": 24,
+      "wrong_before": 6,
+      "wrong_after": 6,
+      "before": {
+        "denied": 18,
+        "covered": 6
+      },
+      "after": {
+        "denied": 18,
+        "covered": 6
+      }
+    },
+    {
+      "family": "exclusion_regulatory_fine",
+      "n": 24,
+      "wrong_before": 21,
+      "wrong_after": 21,
+      "before": {
+        "denied": 3,
+        "covered": 21
+      },
+      "after": {
+        "denied": 3,
+        "covered": 21
+      }
+    },
+    {
+      "family": "exclusion_stock_floor",
+      "n": 48,
+      "wrong_before": 7,
+      "wrong_after": 7,
+      "before": {
+        "denied": 41,
+        "covered": 7
+      },
+      "after": {
+        "denied": 41,
+        "covered": 7
+      }
+    },
+    {
+      "family": "exclusion_subsidence",
+      "n": 40,
+      "wrong_before": 4,
+      "wrong_after": 4,
+      "before": {
+        "denied": 36,
+        "covered": 4
+      },
+      "after": {
+        "denied": 36,
+        "covered": 4
+      }
+    },
+    {
+      "family": "bi_past_waiting_period",
+      "n": 40,
+      "wrong_before": 26,
+      "wrong_after": 26,
+      "before": {
+        "denied": 26,
+        "covered": 14
+      },
+      "after": {
+        "denied": 26,
+        "covered": 14
+      }
+    },
+    {
+      "family": "construction_under_threshold",
+      "n": 16,
+      "wrong_before": 15,
+      "wrong_after": 15,
+      "before": {
+        "denied": 15,
+        "covered": 1
+      },
+      "after": {
+        "denied": 15,
+        "covered": 1
+      }
+    },
+    {
+      "family": "cyber_fire_writeback",
+      "n": 32,
+      "wrong_before": 27,
+      "wrong_after": 27,
+      "before": {
+        "denied": 27,
+        "covered": 5
+      },
+      "after": {
+        "denied": 27,
+        "covered": 5
+      }
+    },
+    {
+      "family": "e17_defence_carveout",
+      "n": 32,
+      "wrong_before": 27,
+      "wrong_after": 27,
+      "before": {
+        "covered": 5,
+        "denied": 27
+      },
+      "after": {
+        "covered": 5,
+        "denied": 27
+      }
+    },
+    {
+      "family": "flood_in_zone_covered",
+      "n": 56,
+      "wrong_before": 49,
+      "wrong_after": 49,
+      "before": {
+        "denied": 49,
+        "covered": 7
+      },
+      "after": {
+        "denied": 49,
+        "covered": 7
+      }
+    },
+    {
+      "family": "flood_outside_zone",
+      "n": 40,
+      "wrong_before": 0,
+      "wrong_after": 0,
+      "before": {
+        "covered": 40
+      },
+      "after": {
+        "covered": 40
+      }
+    },
+    {
+      "family": "stock_raised_covered",
+      "n": 24,
+      "wrong_before": 22,
+      "wrong_after": 22,
+      "before": {
+        "denied": 22,
+        "covered": 2
+      },
+      "after": {
+        "denied": 22,
+        "covered": 2
+      }
+    }
+  ],
+  "excluded": [
+    280,
+    112,
+    62
+  ],
+  "covered": [
+    240,
+    166,
+    166
+  ]
+}

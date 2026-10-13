@@ -23,6 +23,18 @@ POST /ask     →  embed question  →  top-5 chunks  →  relevance gate
 > model, flow diagrams, endpoint reference, chunking strategy, test scenarios
 > and an end-to-end walkthrough.
 
+> **Week 12 — claims triage (start here for the capstone):** one command runs the whole integrated system,
+> [`coursework/w12/results.md`](coursework/w12/results.md) maps the brief to the files:
+>
+> ```bash
+> pip install -r requirements.txt
+> python -m app.triage --demo          # FNOL in -> card with versioned citations, three limits, a referral; spawns the MCP server
+> python -m scripts.w12_run_suite      # 38 integrated cases, assertions first; 4 known-failing cases stay red on purpose
+> python -m pytest                     # 341 passed, 2 skipped (live-model tests)
+> ```
+>
+> No API key is needed: the model is an offline stub, and the eval report says exactly what that does and does not prove.
+
 ---
 
 ## Quick start
@@ -446,10 +458,48 @@ verified against a live Claude or GPT. Commands: [`docs/COMMANDS.md`](docs/COMMA
 
 ---
 
+## Production and observability (Week 11)
+
+Per-request traces (`app/observability.py`): one trace id, a span per retrieval / model call / tool call with
+time, tokens and projected cost, the prompt version of every call (hash-locked in `app/prompt_lock.json`), and
+personal details redacted *before* anything is written (`app/redaction.py`). A support-drill tool
+(`app/logquery.py`) finds one answer in three days of traffic from the logs alone. The failure the drill
+found (a list clause's "this policy excludes ... the following:" lead-in lost between chunks, so excluded
+losses read as covered) is fixed at retrieval (`app/clause_stem.py`, `CARRY_CLAUSE_STEM`): excluded losses
+answered "covered" **40% -> 22%** on 280 ground-truth claims. Evidence, limits and the 10x answer:
+[`coursework/w11/results.md`](coursework/w11/results.md). Measured with the offline stub model.
+
+## Claims triage and coverage assistant (Week 12 capstone)
+
+`python -m app.triage` takes a first notice of loss and returns a **card** and a **referral** — never a
+coverage decision. A hand-built tool loop discovers five tools over MCP (`lookup_policy`, `coverage_in_force`,
+`search_wording`, `get_limits`, `refer_to_adjuster`) from a server running in its own process, and the host
+builds the card from the tools' structured results, not from anything the model wrote:
+
+- **Wording in force on the loss date, enforced in code** (`app/versions.py`): editions and endorsements are
+  dated from the document text, and a search for a loss date returns only wording in force that day, each
+  passage tagged with its edition and the dates it applied. `GET /passages/{id}?as_of=YYYY-MM-DD` is the link
+  on every citation.
+- **Deductible, sub-limit and policy limit are three fields** with their basis and source clause
+  (`app/limits.py`), and an unknown fact (is the site in a flood zone?) leaves the deductible unresolved
+  instead of guessed.
+- **No automated statement of a coverage decision** (`app/compliance.py`): refused at the referral tool,
+  scanned on every system-written string, asserted on every eval case.
+- **Personal details** are removed before the model sees the notice and again from anything bound for the
+  server; one trace id runs host -> MCP server -> referral queue.
+
+Result: wrong-endorsement-version citation rate **88% -> 0%** (n = 25) when the date filter is on; the
+integrated suite went 24/38 -> 38/38 after fixing what its first run found. The judge re-checked on integrated
+outputs agrees with the hand labels **78.9%** of the time and does **not** clear the 85% bar; the model is a
+simulation; no one from another squad has run it. Everything, including those limits:
+[`coursework/w12/results.md`](coursework/w12/results.md).
+
+---
+
 ## Tests
 
 ```bash
-python -m pytest            # 137 passed, 2 skipped (live-model tests)
+python -m pytest            # 341 passed, 2 skipped (live-model tests)
 ```
 
 Hermetic by construction: the hashing embedder and the in-memory store mean no
@@ -462,7 +512,7 @@ behaviours:
 | A known question retrieves the right chunk in the top 5 | `tests/test_retrieval.py` — parametrised over all 8 eval questions, asserting on the *fact* the answer depends on rather than a chunk id, so it stays meaningful when boundaries move |
 | An out-of-scope question returns not-found, not a fabrication | `tests/test_answering.py` — both defences: the gate (asserting the model is *not* called), and citation verification (a fabricated passage number is discarded, and an uncited answer is withheld) |
 
-Plus `tests/test_api.py` for the HTTP contract. Weeks 9-10 add `tests/test_mcp.py` (discovery, scoped HTTP access, vetting, parity with the in-process agent) and `tests/test_team.py` (metering and the multi-agent team). Two live-model tests
+Plus `tests/test_api.py` for the HTTP contract. Weeks 9-10 add `tests/test_mcp.py` (discovery, scoped HTTP access, vetting, parity with the in-process agent) and `tests/test_team.py` (metering and the multi-agent team). Week 11 adds `test_observability.py`, `test_clause_stem.py`, `test_suspicion.py`, `test_hybrid_gate.py`; Week 12 adds `test_versions.py` (a hand-written timeline of editions and endorsement dates, checked at every boundary), `test_policy_registry.py`, `test_limits.py`, `test_triage_tools.py` (the five triage tools over the MCP protocol, incl. scoped HTTP tokens), `test_triage.py` (the integrated system: guards, PII on the wire, one trace id across a real process boundary) and `test_w12_suite.py` (the 38-case suite as a test, the known-failing cases asserted still-failing, replay). Two live-model tests
 (`-m integration`) run only with `ANTHROPIC_API_KEY` set: they disable the gate
 so the out-of-scope question really reaches Claude, and check that the in-scope
 answer cites only chunks that were actually retrieved.

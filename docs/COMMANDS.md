@@ -466,3 +466,80 @@ server trivial, which is exactly why `ToolLoopAgent` takes a `VetPolicy`
 (`app/mcp_vetting.py`): an operator allowlist, a read-only requirement, an injection
 scan of every description and schema string, and definition pinning against rug
 pulls. `scripts/w9_untrusted_server.py` is a deliberately hostile server to try it on.
+
+---
+
+## Observability and the support drill (Week 11)
+
+Every request writes one trace line to `logs/traces.jsonl` (set `TRACE_LOG_PATH=` to turn it off). Details and limits:
+[`coursework/w11/results.md`](../coursework/w11/results.md).
+
+```powershell
+# three days of real-pipeline traffic with one sealed, planted failure; then the drill
+.\.venv\Scripts\python.exe -m scripts.w11_traffic --plant-seed 7
+.\.venv\Scripts\python.exe -m scripts.w11_drill start
+.\.venv\Scripts\python.exe -m app.logquery --day yesterday --decision covered
+.\.venv\Scripts\python.exe -m scripts.w11_drill submit <trace id>
+
+# the suite that went RED before the retrieval fix and GREEN after, and the fix measured against ground truth
+.\.venv\Scripts\python.exe -m scripts.w6_run_eval --embedding hashing
+.\.venv\Scripts\python.exe -m scripts.w11_family_eval
+
+# which prompt versions are locked, and bump one (editing a prompt without bumping fails a test)
+.\.venv\Scripts\python.exe -m app.prompts --check
+.\.venv\Scripts\python.exe -m app.prompts --bump claim-summary=claim-summary-v3
+
+# cost by stage and the improvement that was measured
+.\.venv\Scripts\python.exe -m scripts.w11_cost_report
+.\.venv\Scripts\python.exe -m scripts.w11_cost_improvement
+```
+
+---
+
+## Claims triage (Week 12 capstone)
+
+One entry point, one eval. Evidence, requirement map and honest limits: [`coursework/w12/results.md`](../coursework/w12/results.md).
+No API key is needed (offline stub model). `data/*.pdf` is git-ignored; the commands below rebuild what they need.
+
+```powershell
+# the whole system on one notice: starts the MCP server in its own process, prints the card, citations, referral and cost
+.\.venv\Scripts\python.exe -m app.triage --demo
+.\.venv\Scripts\python.exe -m app.triage --fnol "CLM-2024-00417. Date of loss: 11 August 2024. Flood at the depot, 40 days after the earlier flood. The yard is in a flood zone."
+.\.venv\Scripts\python.exe -m app.triage --fnol-file notice.txt --json
+
+# everything recorded about one request: host spans + the MCP server's own spans + the card + the referral row
+.\.venv\Scripts\python.exe -m app.triage --trace <trace id>
+.\.venv\Scripts\python.exe -m app.triage --trace 47e1d68e4b644e988362b25749aff9fe --workdir coursework\w12\run\shipped
+
+# re-run a stored decision from its redacted notice: "reproduced", or exactly which recorded input changed
+.\.venv\Scripts\python.exe -m app.triage --replay <trace id>
+
+# the failure the date filter prevents (DEMONSTRATION ONLY: offers every edition)
+.\.venv\Scripts\python.exe -m app.triage --demo --no-version-filter --workdir logs\w12_unfiltered
+
+# the integrated eval: 38 cases + 4 known-failing, assertions first; writes coursework\w12\suite_results.json
+.\.venv\Scripts\python.exe -m scripts.w12_run_suite
+.\.venv\Scripts\python.exe -m scripts.w12_run_suite --judge        # judge agreement vs the hand labels (informational: it fails the 85% bar)
+
+# one defence off at a time, the date-filter bonus, cost per claim and the hailstorm arithmetic (about 30 s)
+.\.venv\Scripts\python.exe -m scripts.w12_closed_loop
+
+# a client that imports nothing from app/ calling the triage server, and what it was handed
+.\.venv\Scripts\python.exe -m scripts.w12_peer_client
+```
+
+**The triage tools as a server for someone else's agent** (stdio; `--tools` is the operator's decision about what to publish; `refer_to_adjuster` is the only one that writes):
+
+```powershell
+.\.venv\Scripts\python.exe -m scripts.make_sample_pdf     # writes both sample PDFs into data\
+.\.venv\Scripts\python.exe -m app.mcp_server `
+  --tools lookup_policy,coverage_in_force,search_wording,get_limits,refer_to_adjuster `
+  --ingest data\sample_endorsement_pack.pdf --ingest data\form_ho0304_archive.pdf `
+  --referral-log logs\referrals.jsonl --trace-log logs\server_spans.jsonl
+```
+
+Over HTTP the same tokens as Week 9 scope what each caller sees: a token with `"tools": ["search_wording", "coverage_in_force"]` is not even shown `refer_to_adjuster`, and calling it returns exactly what an unknown tool returns.
+
+**Citations are links.** With the API running (`uvicorn app.main:app`): `GET /passages/{chunk_id}?as_of=2024-08-11` returns the passage as it read on that date, or `in_force_on_as_of: false` if nothing in that chunk applied.
+
+**Switches** (environment / `.env`): `VERSION_FILTER` (default true; false offers every edition), `VERSION_POOL_FACTOR` (candidate pool = factor x k, default 3).

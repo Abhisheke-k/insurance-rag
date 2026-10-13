@@ -61,6 +61,20 @@ INJECTION_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
         "addresses the agent/model/system directly with an imperative",
         re.compile(r"\b(?:agent|model|system|assistant|ai)\b[^.]{0,40}\b(?:must|should|shall)\s+disregard\b", re.IGNORECASE),
     ),
+    # Week 12: found by case X04 -- the notice impersonated the system and widened the reader's remit. The structural defences
+    # (no decision field, the compliance scan) held; the heuristic had not seen this phrasing.
+    (
+        "tells the reader to ignore its own rules or checks",
+        re.compile(r"\bignore (?:your|the|all|any)\s+(?:own\s+)?(?:rules|instructions|guidelines|safeguards|checks|policies)\b", re.IGNORECASE),
+    ),
+    (
+        "claims to be the system or grants the reader new permissions",
+        re.compile(r"(?m)^\s*(?:SYSTEM|ADMIN|DEVELOPER)\s*:|\byou are now (?:permitted|allowed|authori[sz]ed|able) to\b|\bnew instructions?\s*:", re.IGNORECASE),
+    ),
+    (
+        "tells the reader to record a decision on the claim",
+        re.compile(r"\b(?:mark|set|record|treat|log)\s+(?:this|the)\s+(?:claim|loss)\s+as\s+(?:approved|covered|accepted|paid)\b", re.IGNORECASE),
+    ),
 )
 
 

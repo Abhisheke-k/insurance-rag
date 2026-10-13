@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 from typing import Any, Sequence
 
 from app.config import Settings
-from app.generation import build_context_block
+from app.generation import CLAUSE_LEAD_IN_NOTE, build_context_block
 from app.llm import LLMProvider, LLMUnavailableError, build_llm_provider
 from app.models import Citation, RetrievedChunk
 
@@ -48,7 +48,7 @@ CLAIM_NUMBER_RE = re.compile(r"CLM-\d{4}-\d{5}")
 
 CoverageDecision = str  # "covered" | "denied" | "partially_covered" | "needs_review"
 
-SYSTEM_PROMPT = """\
+SYSTEM_PROMPT = f"""\
 You write claim summaries for a claims operations team from adjuster notes.
 
 You have access ONLY to the adjuster notes and the numbered policy/endorsement \
@@ -68,6 +68,7 @@ passage, use "needs_review" and say why in "summary".
 or "4.3"). Leave it null when the decision is not a denial.
 5. Reproduce amounts, dates and clause numbers exactly as written in the source text.
 6. "summary" is 1-3 sentences a claims handler can act on without re-reading the notes.
+7. {CLAUSE_LEAD_IN_NOTE}
 """
 
 CLAIM_SUMMARY_SCHEMA: dict[str, Any] = {

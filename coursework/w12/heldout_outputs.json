@@ -1,0 +1,232 @@
+[
+  {
+    "id": "H01",
+    "notice": "CLM-2024-00418. Date of loss: 3 September 2024. Water came up through the floor drains after a flood, the second this year, about 45 days after the earlier flood. The yard is in a flood zone.",
+    "cited": [
+      {
+        "version": "Form HO-0304, edition 01-24 [in force 2024-01-01 to 2025-01-31]",
+        "section": "Form HO-0304 > Exclusion Code E-17",
+        "excerpt": "Exclusion Code E-17 (Form HO-0304, edition 01-24). This policy does not cover loss or damage arising from a second or subsequent Flood event at the same insured location where that event occurs within 55 consecutive days of an earlier Flood event at the same location, save that this exclusion does not apply to a Flood event caused solely by a named windstorm. Superseded by edition 03-24 with effect from 1 February 2025."
+      }
+    ],
+    "signals": [
+      {
+        "code": "e17_window",
+        "window_days": 55,
+        "edition": "01-24",
+        "prior_event_gap_days": 45,
+        "relation": "within",
+        "carve_out_in_wording": "named windstorm",
+        "wording": "Form HO-0304, edition 01-24 [in force 2024-01-01 to 2025-01-31]"
+      }
+    ],
+    "reason_codes": [
+      "exclusion_arguable"
+    ]
+  },
+  {
+    "id": "H02",
+    "notice": "CLM-2024-00502. Date of loss: 12 July 2024. The river burst its banks and flooded the loading bay. The site is not in a flood zone.",
+    "cited": [
+      {
+        "version": "Form HO-0304, edition 01-24 [in force 2024-01-01 to 2025-01-31]",
+        "section": "Form HO-0304 > Exclusion Code E-17",
+        "excerpt": "Exclusion Code E-17 (Form HO-0304, edition 01-24). This policy does not cover loss or damage arising from a second or subsequent Flood event at the same insured location where that event occurs within 55 consecutive days of an earlier Flood event at the same location, save that this exclusion does not apply to a Flood event caused solely by a named windstorm. Superseded by edition 03-24 with effect from 1 February 2025."
+      }
+    ],
+    "signals": [
+      {
+        "code": "e17_window",
+        "window_days": 55,
+        "edition": "01-24",
+        "prior_event_gap_days": null,
+        "relation": "unknown",
+        "carve_out_in_wording": "named windstorm",
+        "wording": "Form HO-0304, edition 01-24 [in force 2024-01-01 to 2025-01-31]"
+      }
+    ],
+    "reason_codes": [
+      "routine_review"
+    ]
+  },
+  {
+    "id": "H03",
+    "notice": "CLM-2024-00417. Date of loss: 2 November 2024. The stockroom flooded again after the October storms. The yard is in a flood zone.",
+    "cited": [
+      {
+        "version": "Form HO-0304, edition 01-24 [in force 2024-01-01 to 2025-01-31]",
+        "section": "Form HO-0304 > Exclusion Code E-17",
+        "excerpt": "Exclusion Code E-17 (Form HO-0304, edition 01-24). This policy does not cover loss or damage arising from a second or subsequent Flood event at the same insured location where that event occurs within 55 consecutive days of an earlier Flood event at the same location, save that this exclusion does not apply to a Flood event caused solely by a named windstorm. Superseded by edition 03-24 with effect from 1 February 2025."
+      }
+    ],
+    "signals": [
+      {
+        "code": "e17_window",
+        "window_days": 55,
+        "edition": "01-24",
+        "prior_event_gap_days": null,
+        "relation": "unknown",
+        "carve_out_in_wording": "named windstorm",
+        "wording": "Form HO-0304, edition 01-24 [in force 2024-01-01 to 2025-01-31]"
+      }
+    ],
+    "reason_codes": [
+      "routine_review"
+    ]
+  },
+  {
+    "id": "H04",
+    "notice": "CLM-2025-00290. Date of loss: 15 October 2024. Business interruption: production stopped for 80 hours after a power failure. Does the waiting period apply?",
+    "cited": [
+      {
+        "version": "Form HO-0304, edition 01-24 [in force 2024-01-01 to 2025-01-31]",
+        "section": "Form HO-0304 > Exclusion Code E-17",
+        "excerpt": "Exclusion Code E-17 (Form HO-0304, edition 01-24). This policy does not cover loss or damage arising from a second or subsequent Flood event at the same insured location where that event occurs within 55 consecutive days of an earlier Flood event at the same location, save that this exclusion does not apply to a Flood event caused solely by a named windstorm. Superseded by edition 03-24 with effect from 1 February 2025."
+      }
+    ],
+    "signals": [
+      {
+        "code": "e17_window",
+        "window_days": 55,
+        "edition": "01-24",
+        "prior_event_gap_days": null,
+        "relation": "unknown",
+        "carve_out_in_wording": "named windstorm",
+        "wording": "Form HO-0304, edition 01-24 [in force 2024-01-01 to 2025-01-31]"
+      }
+    ],
+    "reason_codes": [
+      "routine_review"
+    ]
+  },
+  {
+    "id": "H05",
+    "notice": "CLM-2024-00418. Date of loss: 5 December 2024. A fire in the packing hall destroyed the conveyor.",
+    "cited": [
+      {
+        "version": "Form HO-0304, edition 01-24 [in force 2024-01-01 to 2025-01-31]",
+        "section": "Form HO-0304 > Exclusion Code E-17",
+        "excerpt": "Exclusion Code E-17 (Form HO-0304, edition 01-24). This policy does not cover loss or damage arising from a second or subsequent Flood event at the same insured location where that event occurs within 55 consecutive days of an earlier Flood event at the same location, save that this exclusion does not apply to a Flood event caused solely by a named windstorm. Superseded by edition 03-24 with effect from 1 February 2025."
+      }
+    ],
+    "signals": [
+      {
+        "code": "e17_window",
+        "window_days": 55,
+        "edition": "01-24",
+        "prior_event_gap_days": null,
+        "relation": "unknown",
+        "carve_out_in_wording": "named windstorm",
+        "wording": "Form HO-0304, edition 01-24 [in force 2024-01-01 to 2025-01-31]"
+      }
+    ],
+    "reason_codes": [
+      "routine_review"
+    ]
+  },
+  {
+    "id": "H06",
+    "notice": "CLM-2024-00417. Date of loss: 9 December 2024. Ransomware encrypted the order system and the attackers demanded a payment.",
+    "cited": [
+      {
+        "version": "Endorsement No. 2 - CYBER AND DATA EXCLUSION [in force from inception to present]",
+        "section": "ENDORSEMENT NO. 2 - CYBER AND DATA EXCLUSION > SECTION 2 - EXCLUSION WORDING > 2.",
+        "excerpt": "[Clause lead-in] 2. Notwithstanding any provision to the contrary within this policy or any endorsement thereto, this policy excludes any loss, damage, liability, claim, cost or expense of whatsoever nature directly or indirectly caused by, contributed to by, resulting from, arising out of or in connection with any of the following, regardless of any other cause or event contributing concurrently or in any other sequence thereto:\n[Continued] (d) the receipt, transmission, distribution or storage of any Malicious Code, whether or not that Malicious Code was introduced deliberately, negligently "
+      }
+    ],
+    "signals": [],
+    "reason_codes": [
+      "routine_review"
+    ]
+  },
+  {
+    "id": "H07",
+    "notice": "CLM-2024-00417. Date of loss: 20 August 2024. Flood at the depot; the site last flooded on 1 July 2024. The yard is in a flood zone.",
+    "cited": [
+      {
+        "version": "Form HO-0304, edition 01-24 [in force 2024-01-01 to 2025-01-31]",
+        "section": "Form HO-0304 > Exclusion Code E-17",
+        "excerpt": "Exclusion Code E-17 (Form HO-0304, edition 01-24). This policy does not cover loss or damage arising from a second or subsequent Flood event at the same insured location where that event occurs within 55 consecutive days of an earlier Flood event at the same location, save that this exclusion does not apply to a Flood event caused solely by a named windstorm. Superseded by edition 03-24 with effect from 1 February 2025."
+      }
+    ],
+    "signals": [
+      {
+        "code": "e17_window",
+        "window_days": 55,
+        "edition": "01-24",
+        "prior_event_gap_days": null,
+        "relation": "unknown",
+        "carve_out_in_wording": "named windstorm",
+        "wording": "Form HO-0304, edition 01-24 [in force 2024-01-01 to 2025-01-31]"
+      }
+    ],
+    "reason_codes": [
+      "routine_review"
+    ]
+  },
+  {
+    "id": "H08",
+    "notice": "CLM-2025-00031. Date of loss: 14 February 2025. Flood damage to the cold store; it also flooded in January. The site is not in a flood zone.",
+    "cited": [
+      {
+        "version": "Endorsement No. 4 - SEQUENTIAL WATER INTRUSION EXCLUSION, edition 03-24 [in force 2025-02-01 to present]",
+        "section": "Endorsement No. 4 - SEQUENTIAL WATER INTRUSION EXCLUSION > Exclusion Code E-17",
+        "excerpt": "Exclusion Code E-17 - Sequential Water Intrusion Events\nExclusion Code E-17 (Form HO-0304, edition 03-24). This policy does not cover loss or damage arising from a second or subsequent Flood event at the same insured location where that event occurs within 60 consecutive days of an earlier Flood event at the same location, regardless of whether a claim was made for the earlier event. This exclusion applies in addition to, and does not narrow, the deductible and sub-limit provisions of clauses 2 and 3 above.\n\n4.4 Interaction with the Flood Defence Condition\nExclusion Code E-17 does not apply wh"
+      }
+    ],
+    "signals": [
+      {
+        "code": "e17_window",
+        "window_days": 60,
+        "edition": "03-24",
+        "prior_event_gap_days": null,
+        "relation": "unknown",
+        "carve_out_in_wording": null,
+        "wording": "Endorsement No. 4 - SEQUENTIAL WATER INTRUSION EXCLUSION, edition 03-24 [in force 2025-02-01 to present]"
+      }
+    ],
+    "reason_codes": [
+      "routine_review"
+    ]
+  },
+  {
+    "id": "H09",
+    "notice": "CLM-2024-00502. Date of loss: 18 August 2024. Cracks appeared in the north wall after ground heave beneath the warehouse.",
+    "cited": [
+      {
+        "version": "Endorsement No. 1 - FLOOD SUB-LIMIT AMENDMENT [in force 2024-06-01 to present]",
+        "section": "ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > 3. DEDUCTIBLE",
+        "excerpt": "3. DEDUCTIBLE\nA deductible of GBP 250,000 each and every loss applies to loss or damage caused by Flood at any location within a Flood Zone. At all other locations the standard property deductible of GBP 50,000 each and every loss continues to apply.\n\nSECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT\n\n4.1 Flood Defence Maintenance\nThe Insured shall maintain all demountable flood barriers, non-return valves and sump pumps at each insured location in good and effective working order, and shall test them at intervals of not more than six months. A written record of each test shall be kept for a"
+      }
+    ],
+    "signals": [],
+    "reason_codes": [
+      "routine_review"
+    ]
+  },
+  {
+    "id": "H10",
+    "notice": "CLM-2024-00611. Date of loss: 13 September 2024. A burst water main flooded the basement stock room; this is the third flood in 90 days. The yard is in a flood zone.",
+    "cited": [
+      {
+        "version": "Form HO-0304, edition 01-24 [in force 2024-01-01 to 2025-01-31]",
+        "section": "Form HO-0304 > Exclusion Code E-17",
+        "excerpt": "Exclusion Code E-17 (Form HO-0304, edition 01-24). This policy does not cover loss or damage arising from a second or subsequent Flood event at the same insured location where that event occurs within 55 consecutive days of an earlier Flood event at the same location, save that this exclusion does not apply to a Flood event caused solely by a named windstorm. Superseded by edition 03-24 with effect from 1 February 2025."
+      }
+    ],
+    "signals": [
+      {
+        "code": "e17_window",
+        "window_days": 55,
+        "edition": "01-24",
+        "prior_event_gap_days": null,
+        "relation": "unknown",
+        "carve_out_in_wording": "named windstorm",
+        "wording": "Form HO-0304, edition 01-24 [in force 2024-01-01 to 2025-01-31]"
+      }
+    ],
+    "reason_codes": [
+      "routine_review"
+    ]
+  }
+]

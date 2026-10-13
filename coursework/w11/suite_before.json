@@ -1,0 +1,330 @@
+{
+  "label": "before-fix",
+  "overall": [
+    15,
+    31
+  ],
+  "overrides": {},
+  "rows": [
+    {
+      "id": "gen_bi_exceeds_indemnity_period_0",
+      "mode": "verdict_inversion",
+      "source": "generated",
+      "decision": "covered",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": true,
+      "pass": true
+    },
+    {
+      "id": "gen_bi_past_waiting_period_0",
+      "mode": "off_topic_citation",
+      "source": "generated",
+      "decision": "covered",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": false,
+      "pass": false
+    },
+    {
+      "id": "gen_exclusion_subsidence_0",
+      "mode": "mislabel",
+      "source": "generated",
+      "decision": "denied",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": true,
+      "pass": true
+    },
+    {
+      "id": "gen_exclusion_regulatory_fine_0",
+      "mode": "control",
+      "source": "generated",
+      "decision": "covered",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": true,
+      "pass": true
+    },
+    {
+      "id": "gen_bi_within_waiting_period_0",
+      "mode": "verdict_inversion",
+      "source": "generated",
+      "decision": "denied",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": true,
+      "pass": true
+    },
+    {
+      "id": "gen_e17_within_window_0",
+      "mode": "verdict_inversion",
+      "source": "generated",
+      "decision": "denied",
+      "assertions_pass": false,
+      "failed_assertions": [
+        "exclusion_id_when_denied"
+      ],
+      "judge_pass": true,
+      "pass": false
+    },
+    {
+      "id": "gen_e17_within_window_1",
+      "mode": "verdict_inversion",
+      "source": "generated",
+      "decision": "denied",
+      "assertions_pass": false,
+      "failed_assertions": [
+        "exclusion_id_when_denied"
+      ],
+      "judge_pass": true,
+      "pass": false
+    },
+    {
+      "id": "gen_stock_raised_covered_0",
+      "mode": "control",
+      "source": "generated",
+      "decision": "covered",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": false,
+      "pass": false
+    },
+    {
+      "id": "gen_out_of_corpus_0",
+      "mode": "control",
+      "source": "generated",
+      "decision": "covered",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": true,
+      "pass": true
+    },
+    {
+      "id": "gen_sublimit_erosion_0",
+      "mode": "off_topic_citation",
+      "source": "generated",
+      "decision": "denied",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": false,
+      "pass": false
+    },
+    {
+      "id": "gen_sublimit_erosion_1",
+      "mode": "off_topic_citation",
+      "source": "generated",
+      "decision": "denied",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": false,
+      "pass": false
+    },
+    {
+      "id": "gen_exclusion_livestock_0",
+      "mode": "mislabel",
+      "source": "generated",
+      "decision": "denied",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": true,
+      "pass": true
+    },
+    {
+      "id": "gen_exclusion_stock_floor_0",
+      "mode": "verdict_inversion",
+      "source": "generated",
+      "decision": "covered",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": false,
+      "pass": false
+    },
+    {
+      "id": "gen_exclusion_stock_floor_1",
+      "mode": "verdict_inversion",
+      "source": "generated",
+      "decision": "denied",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": true,
+      "pass": true
+    },
+    {
+      "id": "gen_flood_in_zone_covered_0",
+      "mode": "verdict_inversion",
+      "source": "generated",
+      "decision": "denied",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": true,
+      "pass": true
+    },
+    {
+      "id": "gen_flood_in_zone_covered_1",
+      "mode": "verdict_inversion",
+      "source": "generated",
+      "decision": "denied",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": true,
+      "pass": true
+    },
+    {
+      "id": "gen_cyber_cloud_outage_0",
+      "mode": "verdict_inversion",
+      "source": "generated",
+      "decision": "covered",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": false,
+      "pass": false
+    },
+    {
+      "id": "gen_cyber_fire_writeback_0",
+      "mode": "verdict_inversion",
+      "source": "generated",
+      "decision": "denied",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": false,
+      "pass": false
+    },
+    {
+      "id": "gen_construction_under_threshold_0",
+      "mode": "mislabel",
+      "source": "generated",
+      "decision": "denied",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": true,
+      "pass": true
+    },
+    {
+      "id": "gen_bi_late_notification_0",
+      "mode": "off_topic_citation",
+      "source": "generated",
+      "decision": "covered",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": true,
+      "pass": true
+    },
+    {
+      "id": "gen_flood_outside_zone_0",
+      "mode": "deductible_misapplied",
+      "source": "generated",
+      "decision": "covered",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": true,
+      "pass": true
+    },
+    {
+      "id": "gen_flood_defence_untested_0",
+      "mode": "control",
+      "source": "generated",
+      "decision": "denied",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": true,
+      "pass": true
+    },
+    {
+      "id": "gen_cyber_ransomware_0",
+      "mode": "verdict_inversion",
+      "source": "generated",
+      "decision": "covered",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": false,
+      "pass": false
+    },
+    {
+      "id": "gen_cyber_ransomware_1",
+      "mode": "verdict_inversion",
+      "source": "generated",
+      "decision": "covered",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": false,
+      "pass": false
+    },
+    {
+      "id": "gen_e17_defence_carveout_0",
+      "mode": "verdict_inversion",
+      "source": "generated",
+      "decision": "denied",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": false,
+      "pass": false
+    },
+    {
+      "id": "gen_exclusion_construction_0",
+      "mode": "mislabel",
+      "source": "generated",
+      "decision": "denied",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": true,
+      "pass": true
+    },
+    {
+      "id": "regression_trc_00034",
+      "mode": "verdict_inversion",
+      "source": "regression",
+      "decision": "denied",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": true,
+      "pass": true
+    },
+    {
+      "id": "regression_trc_00011",
+      "mode": "off_topic_citation",
+      "source": "regression",
+      "decision": "denied",
+      "assertions_pass": true,
+      "failed_assertions": [],
+      "judge_pass": false,
+      "pass": false
+    },
+    {
+      "id": "prod_279c1932",
+      "mode": "exclusion_missed",
+      "source": "production_failure:279c193285c04c7b9f93373112f10c55",
+      "decision": "covered",
+      "assertions_pass": false,
+      "failed_assertions": [
+        "must_not_decide"
+      ],
+      "judge_pass": null,
+      "pass": false
+    },
+    {
+      "id": "prod_aeb32b61",
+      "mode": "exclusion_missed",
+      "source": "production_failure:aeb32b61f19f40d4b2f7a7df0acc8555",
+      "decision": "covered",
+      "assertions_pass": false,
+      "failed_assertions": [
+        "must_not_decide"
+      ],
+      "judge_pass": null,
+      "pass": false
+    },
+    {
+      "id": "prod_eabf329a",
+      "mode": "exclusion_missed",
+      "source": "production_failure:eabf329a736a42e3ad482a8c3a1aaf28",
+      "decision": "covered",
+      "assertions_pass": false,
+      "failed_assertions": [
+        "must_not_decide"
+      ],
+      "judge_pass": null,
+      "pass": false
+    }
+  ]
+}

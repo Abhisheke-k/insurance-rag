@@ -1,0 +1,168 @@
+{
+  "hashes": {
+    "labels": "98fbdf1ffecc3c00",
+    "labels_heldout": "08f7c42820ff17f0",
+    "judge_shipped_prompt": "e0e4830196abc7ba",
+    "judge_rejected_v2_prompt": "ebb7139d39b16598"
+  },
+  "table": {
+    "tuning_set_28": {
+      "kind": "tuned",
+      "shipped_v1": {
+        "n": 28,
+        "agree": 22,
+        "agreement_pct": 78.6,
+        "ci95_pct": [
+          60.5,
+          89.8
+        ],
+        "confusion": {
+          "judge_fit_human_fit": 20,
+          "judge_unfit_human_unfit": 2,
+          "judge_fit_human_unfit": 6,
+          "judge_unfit_human_fit": 0
+        },
+        "disagreements": [
+          "L01_flood_in_zone",
+          "L02_flood_outside_zone",
+          "L03_flood_zone_not_stated",
+          "L05_flood_after_the_endorsement_took_effect",
+          "S09_may2024_day_before_endorsement_1",
+          "S10_jun2024_endorsement_1_starts"
+        ],
+        "bar_85": false
+      },
+      "rejected_v2_tuned_on_the_28": {
+        "n": 28,
+        "agree": 28,
+        "agreement_pct": 100.0,
+        "ci95_pct": [
+          87.9,
+          100.0
+        ],
+        "confusion": {
+          "judge_fit_human_fit": 20,
+          "judge_unfit_human_unfit": 8,
+          "judge_fit_human_unfit": 0,
+          "judge_unfit_human_fit": 0
+        },
+        "disagreements": [],
+        "bar_85": true
+      },
+      "week6_judge_v2_unchanged": {
+        "n": 28,
+        "agree": 22,
+        "agreement_pct": 78.6,
+        "ci95_pct": [
+          60.5,
+          89.8
+        ],
+        "confusion": {
+          "judge_fit_human_fit": 20,
+          "judge_unfit_human_unfit": 2,
+          "judge_fit_human_unfit": 6,
+          "judge_unfit_human_fit": 0
+        },
+        "disagreements": [
+          "L01_flood_in_zone",
+          "L02_flood_outside_zone",
+          "L03_flood_zone_not_stated",
+          "L05_flood_after_the_endorsement_took_effect",
+          "S09_may2024_day_before_endorsement_1",
+          "S10_jun2024_endorsement_1_starts"
+        ],
+        "bar_85": false
+      }
+    },
+    "heldout_10": {
+      "kind": "held-out",
+      "shipped_v1": {
+        "n": 10,
+        "agree": 8,
+        "agreement_pct": 80.0,
+        "ci95_pct": [
+          49.0,
+          94.3
+        ],
+        "confusion": {
+          "judge_fit_human_fit": 6,
+          "judge_unfit_human_unfit": 2,
+          "judge_fit_human_unfit": 2,
+          "judge_unfit_human_fit": 0
+        },
+        "disagreements": [
+          "H02",
+          "H09"
+        ],
+        "bar_85": false
+      },
+      "rejected_v2_tuned_on_the_28": {
+        "n": 10,
+        "agree": 6,
+        "agreement_pct": 60.0,
+        "ci95_pct": [
+          31.3,
+          83.2
+        ],
+        "confusion": {
+          "judge_fit_human_fit": 3,
+          "judge_unfit_human_unfit": 3,
+          "judge_fit_human_unfit": 1,
+          "judge_unfit_human_fit": 3
+        },
+        "disagreements": [
+          "H07",
+          "H08",
+          "H09",
+          "H10"
+        ],
+        "bar_85": false
+      },
+      "week6_judge_v2_unchanged": {
+        "n": 10,
+        "agree": 6,
+        "agreement_pct": 60.0,
+        "ci95_pct": [
+          31.3,
+          83.2
+        ],
+        "confusion": {
+          "judge_fit_human_fit": 6,
+          "judge_unfit_human_unfit": 0,
+          "judge_fit_human_unfit": 4,
+          "judge_unfit_human_fit": 0
+        },
+        "disagreements": [
+          "H02",
+          "H04",
+          "H05",
+          "H09"
+        ],
+        "bar_85": false
+      }
+    }
+  },
+  "combined_38_untuned_judges": {
+    "shipped_v1": {
+      "agree": 30,
+      "n": 38,
+      "agreement_pct": 78.9,
+      "ci95_pct": [
+        63.7,
+        88.9
+      ],
+      "bar_85": false
+    },
+    "week6_judge_v2_unchanged": {
+      "agree": 28,
+      "n": 38,
+      "agreement_pct": 73.7,
+      "ci95_pct": [
+        58.0,
+        85.0
+      ],
+      "bar_85": false
+    }
+  },
+  "caveats": "stub judge (deterministic rules); single rater who is also the judge's author; n = 28 + 10; the rejected v2 was tuned on the 28"
+}

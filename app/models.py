@@ -97,6 +97,29 @@ class Chunk:
 
 
 @dataclass(frozen=True, slots=True)
+class VersionTag:
+    """What a citation must say about a piece of wording: which document/edition, and when it applied."""
+
+    document: str
+    edition: str | None
+    effective_from: str | None
+    effective_to: str | None
+
+    def to_dict(self) -> dict[str, str | None]:
+        return {
+            "document": self.document,
+            "edition": self.edition,
+            "effective_from": self.effective_from,
+            "effective_to": self.effective_to,
+        }
+
+    def label(self) -> str:
+        """How a citation names this wording: the document, its edition, and when it applied."""
+        name = f"{self.document}, edition {self.edition}" if self.edition else self.document
+        return f"{name} [in force {self.effective_from or 'from inception'} to {self.effective_to or 'present'}]"
+
+
+@dataclass(frozen=True, slots=True)
 class RetrievedChunk:
     """A chunk returned by the vector store, with its similarity score."""
 
@@ -109,6 +132,12 @@ class RetrievedChunk:
     section_path: str
     clause_label: str | None
     score: float
+    #: Position of this chunk within its document, and whether it is one slice of a clause too large to keep
+    #: whole. Both come from the chunk's stored metadata; they let retrieval find the clause's lead-in.
+    chunk_index: int = 0
+    is_partial_clause: bool = False
+    #: Set only by loss-date-aware retrieval (``RagService.retrieve_as_of``): the editions/endorsements this text belongs to.
+    versions: tuple[VersionTag, ...] = ()
 
     @property
     def section(self) -> str:

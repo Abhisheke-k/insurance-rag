@@ -36,7 +36,7 @@ from __future__ import annotations
 import json
 import logging
 import time
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -54,17 +54,19 @@ from app.agent import (
     _TurnContext,
 )
 from app.config import Settings
+from app.generation import CLAUSE_LEAD_IN_NOTE
 from app.injection_guard import quarantine
 from app.llm import LLMProvider, LLMUnavailableError, build_llm_provider
 from app.mcp_client import McpConnectionError, McpToolClient, ToolDefinition, ToolOutcome
 from app.mcp_vetting import Verdict, VetPolicy, scan_tool_output, vet_tools
-from app.models import RetrievedChunk
+from app.models import RetrievedChunk, VersionTag
 
 logger = logging.getLogger(__name__)
 
 __all__ = [
     "SINGLE_AGENT_ROLE",
     "AgentRole",
+    "ArgumentRejected",
     "LoopOutcome",
     "McpClaimsAgent",
     "ToolLoopAgent",
@@ -80,6 +82,10 @@ MAX_PASSAGES = 20
 
 #: Draft fields a tool may declare as parameters and have filled from the running draft.
 _DRAFT_PARAMETERS = ("claim_number", "date_of_loss", "coverage_decision", "cited_exclusion_id", "excess_amount")
+
+
+class ArgumentRejected(Exception):
+    """Raised by a host's argument filter to stop a call before it leaves; the message is shown to the model."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,7 +104,7 @@ class AgentRole:
 
 SINGLE_AGENT_ROLE = AgentRole(
     name="claims_agent",
-    brief="""\
+    brief=f"""\
 You are a claims-processing agent working from adjuster notes for an insurance claims \
 desk. Produce a structured claim summary: a coverage decision grounded in the policy \
 corpus, plus the claim's identifying fields.
@@ -111,7 +117,8 @@ do not guess.
 again. If you cannot fix it (for example the notes never state a well-formed claim \
 number), say so in draft_summary and finalize with needs_review rather than inventing a \
 value.
-3. Reproduce amounts, dates and clause numbers exactly as written in the source.""",
+3. Reproduce amounts, dates and clause numbers exactly as written in the source.
+4. {CLAUSE_LEAD_IN_NOTE}""",
     required_tools=("search_policy", "check_assertions"),
 )
 
@@ -250,6 +257,15 @@ def _passages(structured: Any) -> tuple[list[RetrievedChunk], list[InjectionFlag
                     section_path=str(item.get("section_path", "")),
                     clause_label=item.get("clause_label") or None,
                     score=float(item.get("score", 0.0)),
+                    versions=tuple(
+                        VersionTag(
+                            document=str(tag["document"]),
+                            edition=tag.get("edition"),
+                            effective_from=tag.get("effective_from"),
+                            effective_to=tag.get("effective_to"),
+                        )
+                        for tag in item.get("versions") or []
+                    ),
                 )
             )
         flags = [
@@ -297,6 +313,8 @@ class ToolLoopAgent:
         role: AgentRole = SINGLE_AGENT_ROLE,
         vet_policy: VetPolicy | None = None,
         enable_injection_guard: bool = True,
+        observer: Callable[[str, dict[str, Any], ToolOutcome], None] | None = None,
+        argument_filter: Callable[[str, dict[str, Any]], dict[str, Any]] | None = None,
     ) -> None:
         self._settings = settings
         self._tools = tools
@@ -304,6 +322,12 @@ class ToolLoopAgent:
         self._role = role
         self._vet = vet_policy or VetPolicy()
         self._guard = enable_injection_guard
+        #: Called with ``(tool, arguments sent, raw outcome)`` after every successful round trip. The host uses it to read
+        #: *structured* results (the model only ever sees the text rendering).
+        self._observer = observer
+        #: Rewrites a call's arguments just before they leave the host -- the place to redact free text bound for another
+        #: party's server. Receives ``(tool, arguments)``; must return the arguments to send.
+        self._argument_filter = argument_filter
         self._catalog: list[ToolDefinition] = []
         self._by_name: dict[str, ToolDefinition] = {}
         self._schema: dict[str, Any] = {}
@@ -374,6 +398,8 @@ class ToolLoopAgent:
             )
         if refresh or not self._catalog:
             self.refresh_catalog()
+        # Same passage count as the in-process agent, so moving the tools behind MCP changes nothing the model sees.
+        top_k = top_k if top_k is not None else self._settings.claim_top_k
 
         state = _RunState(start=time.monotonic())
         max_steps = self._role.max_steps or self._settings.agent_max_steps
@@ -445,11 +471,19 @@ class ToolLoopAgent:
             state.steps.append(turn.as_step(name, arguments, f"rejected: {problem}"))
             return
 
+        if self._argument_filter is not None:
+            try:
+                arguments = self._argument_filter(name, arguments)
+            except ArgumentRejected as exc:
+                state.steps.append(turn.as_step(name, arguments, f"rejected: {exc}"))
+                return
         try:
             outcome = self._tools.call_tool(name, arguments)
         except McpConnectionError as exc:
             raise ClaimsAgentError(str(exc)) from exc
 
+        if self._observer is not None:
+            self._observer(name, arguments, outcome)
         observation = self._observe(state, name, outcome)
         if not outcome.is_error:
             state.satisfied.add(name)
@@ -475,7 +509,12 @@ class ToolLoopAgent:
                 observation += f"\n\n{len(flags)} result(s) withheld -- suspected prompt injection:\n{withheld}"
             return observation
 
-        text = outcome.text or (json.dumps(outcome.structured) if outcome.structured is not None else "")
+        if isinstance(outcome.structured, dict) and set(outcome.structured) != {"result"}:
+            # A structured result is re-rendered compactly: the server's pretty-printed JSON costs input tokens on every later
+            # turn. (``{"result": x}`` is just the SDK wrapping a plain return value; that tool's own text is kept as it was.)
+            text = json.dumps(outcome.structured, separators=(",", ":"))
+        else:
+            text = outcome.text or (json.dumps(outcome.structured) if outcome.structured is not None else "")
         if self._guard:
             reasons = scan_tool_output(text)
             if reasons:

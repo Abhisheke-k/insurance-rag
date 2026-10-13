@@ -25,6 +25,7 @@ from typing import Any
 
 from app.claims import ClaimSummary, ClaimSummaryGenerator
 from app.models import RetrievedChunk
+from app.prompts import prompt_version
 
 __all__ = [
     "PROMPT_VERSION",
@@ -36,9 +37,9 @@ __all__ = [
     "write_trace",
 ]
 
-#: Bumped whenever SYSTEM_PROMPT or CLAIM_SUMMARY_SCHEMA changes shape -- traces
-#: record which version produced them, per the Week 5 replay requirement.
-PROMPT_VERSION = "claim-summary-v1"
+#: Read from the prompt registry (app/prompts.py, pinned by a hash lock) rather than typed here, so it cannot
+#: drift from the prompt it names. Week 5 traces recorded "claim-summary-v1"; the current prompt is v2.
+PROMPT_VERSION = prompt_version("claim-summary")
 
 #: Synthetic claimant surnames used across scripts/w5_scenarios.py. A real
 #: deployment would run a NER model or a name-gazetteer here; a fixed list is

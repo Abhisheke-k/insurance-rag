@@ -52,6 +52,7 @@ from app.agent import (
     _TurnContext,
 )
 from app.config import Settings
+from app.generation import CLAUSE_LEAD_IN_NOTE
 from app.llm import LLMProvider, LLMUnavailableError, build_llm_provider
 from app.mcp_agent import AgentRole, LoopOutcome, ToolLoopAgent, _turn_message, injection_notes
 from app.mcp_client import McpToolClient
@@ -71,7 +72,7 @@ SPECIALISTS = ("analyst", "clerk")
 
 ANALYST_ROLE = AgentRole(
     name="coverage_analyst",
-    brief="""\
+    brief=f"""\
 You are the coverage analyst on a claims team. A manager has handed you adjuster notes and \
 a task. Your one job: find the policy wording that governs this claim and decide coverage.
 
@@ -82,7 +83,8 @@ draft_citations. Leave draft_claim_number and draft_date_of_loss null -- the cle
 Rules:
 1. Ground the decision in passage numbers a tool returned and list them in draft_citations. \
 A decision with no resolvable citation is downgraded to needs_review -- do not guess.
-2. Reproduce amounts, dates and clause numbers exactly as written in the source.""",
+2. Reproduce amounts, dates and clause numbers exactly as written in the source.
+3. {CLAUSE_LEAD_IN_NOTE}""",
     terminal_action="report",
     tool_names=("search_policy", "lookup_exclusion_code"),
     required_tools=("search_policy",),

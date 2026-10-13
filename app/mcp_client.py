@@ -32,6 +32,8 @@ from mcp.server.mcpserver import MCPServer
 from mcp.shared.exceptions import MCPError
 from mcp_types import CONNECTION_CLOSED, Tool
 
+from app.observability import current_trace, span
+
 logger = logging.getLogger(__name__)
 
 __all__ = ["McpConnectionError", "McpToolClient", "ToolDefinition", "ToolOutcome"]
@@ -240,37 +242,62 @@ class McpToolClient:
         """Ask the server what it offers *now* (never cached), following pagination."""
         client = self._require()
         self._count("tools/list")
+        active = current_trace()
 
-        async def collect() -> list[ToolDefinition]:
-            tools: list[ToolDefinition] = []
-            cursor: str | None = None
-            for _ in range(_MAX_LISTING_PAGES):
-                page = await client.list_tools(cursor=cursor, cache_mode="refresh")
-                tools.extend(ToolDefinition.from_mcp(tool) for tool in page.tools)
-                cursor = page.next_cursor
-                if cursor is None:
-                    break
-            return tools
+        with span("tools/list", "tool", tool="tools/list", transport="mcp") as current:
+            meta = {"traceparent": active.traceparent(current.span_id)} if active and current else None
 
-        try:
-            return self._submit(collect())
-        except MCPError as exc:
-            raise McpConnectionError(f"tools/list failed: {exc.message}") from exc
+            async def collect() -> list[ToolDefinition]:
+                tools: list[ToolDefinition] = []
+                cursor: str | None = None
+                for _ in range(_MAX_LISTING_PAGES):
+                    page = await client.list_tools(cursor=cursor, cache_mode="refresh", meta=meta)
+                    tools.extend(ToolDefinition.from_mcp(tool) for tool in page.tools)
+                    cursor = page.next_cursor
+                    if cursor is None:
+                        break
+                return tools
+
+            try:
+                listed = self._submit(collect())
+            except MCPError as exc:
+                raise McpConnectionError(f"tools/list failed: {exc.message}") from exc
+            if current is not None:
+                current.set(tools=[t.name for t in listed])
+            return listed
 
     def call_tool(self, name: str, arguments: dict[str, Any]) -> ToolOutcome:
         """Call one tool. Tool-level and protocol-level refusals come back as ``is_error`` outcomes
         (so the model can see them and recover); only a dead connection raises."""
         client = self._require()
         self._count("tools/call")
+        active = current_trace()
+        raw = json.dumps(arguments, sort_keys=True, default=str)
 
-        async def call() -> ToolOutcome:
-            try:
-                result = await client.call_tool(name, arguments)
-            except MCPError as exc:
-                if exc.code == CONNECTION_CLOSED:
-                    raise McpConnectionError("the tool server closed the connection") from exc
-                return ToolOutcome(text=f"MCP error {exc.code}: {exc.message}", structured=None, is_error=True)
-            text = "\n".join(block.text for block in result.content if getattr(block, "type", None) == "text")
-            return ToolOutcome(text=text, structured=result.structured_content, is_error=bool(result.is_error))
+        with span(
+            f"tool:{name}",
+            "tool",
+            tool=name,
+            transport="mcp",
+            args_digest=hashlib.sha256(raw.encode("utf-8")).hexdigest()[:12],
+            # what was sent, redacted: tool arguments are data shared with the tool's operator
+            args_preview=active.tracer.redactor.redact(raw).text[:200] if active else None,
+        ) as current:
+            # The trace id travels in the request's _meta as a W3C traceparent, so the server's
+            # own span records carry the same id and the two halves can be joined.
+            meta = {"traceparent": active.traceparent(current.span_id)} if active and current else None
 
-        return self._submit(call())
+            async def call() -> ToolOutcome:
+                try:
+                    result = await client.call_tool(name, arguments, meta=meta)
+                except MCPError as exc:
+                    if exc.code == CONNECTION_CLOSED:
+                        raise McpConnectionError("the tool server closed the connection") from exc
+                    return ToolOutcome(text=f"MCP error {exc.code}: {exc.message}", structured=None, is_error=True)
+                text = "\n".join(block.text for block in result.content if getattr(block, "type", None) == "text")
+                return ToolOutcome(text=text, structured=result.structured_content, is_error=bool(result.is_error))
+
+            outcome = self._submit(call())
+            if current is not None:
+                current.set(ok=not outcome.is_error)
+            return outcome

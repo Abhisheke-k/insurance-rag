@@ -58,6 +58,8 @@ def _to_retrieved(metadata: dict[str, Any], text: str, score: float) -> Retrieve
         section_path=str(metadata.get("section_path", "")),
         clause_label=str(metadata.get("clause_label", "")) or None,
         score=score,
+        chunk_index=int(metadata.get("chunk_index", 0) or 0),
+        is_partial_clause=bool(metadata.get("is_partial_clause", False)),
     )
 
 

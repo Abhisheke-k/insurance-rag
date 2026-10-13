@@ -1,0 +1,84 @@
+{
+  "_comment": "SYNTHETIC table of the three money figures by product, hand-copied from the sample endorsement pack. tests/test_limits.py checks every figure against the wording itself, so this table cannot drift from the document it cites without a red test.",
+  "products": {
+    "commercial-property": {
+      "currency": "GBP",
+      "figures": [
+        {
+          "name": "policy_limit",
+          "peril": "*",
+          "amount": 40000000,
+          "basis": "any one occurrence",
+          "effective_from": "2024-06-01",
+          "effective_to": null,
+          "source": "Endorsement No. 1, clause 2 (AMENDMENT TO LIMIT)",
+          "stated": "stated",
+          "note": "First stated in Endorsement No. 1; the policy schedule is not in the corpus, so no figure is offered for earlier losses.",
+          "source_document": "sample_endorsement_pack.pdf"
+        },
+        {
+          "name": "sub_limit",
+          "peril": "flood",
+          "amount": 2500000,
+          "basis": "annual aggregate",
+          "effective_from": null,
+          "effective_to": "2024-05-31",
+          "source": "Endorsement No. 1, clause 2 (the figure the endorsement amends 'from')",
+          "stated": "stated",
+          "note": "Annual aggregate: earlier payments in the Period of Insurance erode it (clause 4.2.1); paid-to-date is not held here.",
+          "source_document": "sample_endorsement_pack.pdf"
+        },
+        {
+          "name": "sub_limit",
+          "peril": "flood",
+          "amount": 5000000,
+          "basis": "annual aggregate",
+          "effective_from": "2024-06-01",
+          "effective_to": null,
+          "source": "Endorsement No. 1, clause 2 (AMENDMENT TO LIMIT)",
+          "stated": "stated",
+          "note": "Annual aggregate across all insured locations, and part of (not additional to) the policy limit. Earlier payments erode it (clause 4.2.1); paid-to-date is not held here.",
+          "source_document": "sample_endorsement_pack.pdf"
+        },
+        {
+          "name": "deductible",
+          "peril": "flood",
+          "condition": "in_flood_zone",
+          "amount": 250000,
+          "basis": "each and every loss",
+          "effective_from": "2024-06-01",
+          "effective_to": null,
+          "source": "Endorsement No. 1, clause 3 (DEDUCTIBLE)",
+          "stated": "stated",
+          "note": "Applies at a location within a Flood Zone (Zone 2 or 3 on the Environment Agency map at the endorsement's inception, clause 1.2).",
+          "source_document": "sample_endorsement_pack.pdf"
+        },
+        {
+          "name": "deductible",
+          "peril": "flood",
+          "condition": "not_in_flood_zone",
+          "amount": 50000,
+          "basis": "each and every loss",
+          "effective_from": null,
+          "effective_to": null,
+          "source": "Endorsement No. 1, clause 3 (the standard property deductible 'continues to apply')",
+          "stated": "stated",
+          "note": "At all locations outside a Flood Zone.",
+          "source_document": "sample_endorsement_pack.pdf"
+        },
+        {
+          "name": "deductible",
+          "peril": "other",
+          "amount": 50000,
+          "basis": "each and every loss",
+          "effective_from": null,
+          "effective_to": null,
+          "source": "Endorsement No. 1, clause 3 (the standard property deductible)",
+          "stated": "inferred",
+          "note": "The endorsement names this as the standard property deductible; that it governs perils other than flood is an inference -- the policy schedule is not in the corpus.",
+          "source_document": "sample_endorsement_pack.pdf"
+        }
+      ]
+    }
+  }
+}

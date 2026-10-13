@@ -138,6 +138,9 @@ class VetPolicy:
     #: Tools that may be used at all. ``None`` = no allowlist (acceptable for a server you run yourself).
     allowed: frozenset[str] | None = None
     require_read_only: bool = True
+    #: Tools the operator has reviewed and permits to write (they still may not declare themselves destructive). Naming
+    #: one here is the only way a non-read-only tool gets in front of the model; a server cannot add itself.
+    write_allowed: frozenset[str] = frozenset()
     max_description_chars: int = 2000
     #: Names the agent itself uses; a server may not claim them.
     reserved_names: frozenset[str] = frozenset({"finalize", "report", "delegate"})
@@ -166,7 +169,7 @@ def _check(tool: ToolDefinition, policy: VetPolicy) -> list[str]:
         reasons.append(f"name {tool.name!r} is reserved by the agent")
     if policy.allowed is not None and tool.name not in policy.allowed:
         reasons.append("not on the operator's allowlist")
-    if policy.require_read_only and tool.read_only is not True:
+    if policy.require_read_only and tool.read_only is not True and tool.name not in policy.write_allowed:
         reasons.append("does not declare itself read-only")
     if tool.destructive is True:
         reasons.append("declares itself destructive")

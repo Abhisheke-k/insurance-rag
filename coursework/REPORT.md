@@ -1,4 +1,4 @@
-# Task Set D — Weeks 4-10: Implementation Report
+# Task Set D — Weeks 4-12: Implementation Report
 
 **Domain:** Insurance claims. **App:** Endorsement Desk, extended in this
 repo across seven weekly practicals. **Environment:** no Anthropic or
@@ -325,6 +325,48 @@ Full detail: [`coursework/w10/results.md`](w10/results.md),
 
 ---
 
+## Week 11 — Production: observability, cost, failure → test loop (`coursework/w11/`)
+
+**Task:** make "an adjuster says it told a claimant something was covered when the policy excludes it, sometime yesterday" answerable from logs; turn what that finds into
+permanent tests; fix it; cost it; say what breaks at 10×.
+
+- **Traces** (`app/observability.py`, `app/redaction.py`, `app/prompts.py`): one trace id per request, spans for retrieval / model call / tool call with time, tokens and projected
+  cost, the prompt version on every model call (hash-locked), personal details redacted before write. **Drill** (`app/logquery.py`): found the planted answer in **01:30** from
+  logs alone (self-run, not squadmate-timed); a field added afterwards (`output.suspect`) cut it to 23 → 2 candidates, 00:16.
+- **Loop:** the answer was the cyber exclusion's items (b)–(h) losing their "this policy excludes … the following:" lead-in across chunk boundaries. Three eval cases built from the log,
+  RED before the fix (suite **15/31**), **20/31** after; against ground truth, excluded losses answered "covered" **112/280 (40%) → 62/280 (22%)** with no over-blocking added (covered losses wrongly denied 166/240 → 166/240).
+  A first fix changed nothing (a field was silently dropped by hybrid retrieval) — caught by the suite, fixed, regression-tested.
+- **Also found:** `/ask` had answered nothing in hybrid mode (a cosine floor applied to fused RRF scores); the system denies covered claims 69% of the time (unchanged, the largest remaining weakness).
+- **Cost:** passages per claim 5 → 4: input tokens **−15.8%**, projected cost **−12.5%**, governing-passage recall 99% → 99%. The provider rate limit breaks first at 10× (by elimination).
+- **Limits:** stub model; not squadmate-timed; canary routing is a plan; one regression explained, one failure left open (a regulator's penalty).
+
+Full detail: [`coursework/w11/results.md`](w11/results.md).
+
+---
+
+## Week 12 — Capstone, Variant D: Claims Triage & Coverage Assistant (`coursework/w12/`)
+
+**Task:** integrate the eleven weeks: a system that takes a first notice of loss, retrieves the wording **in force on the loss date**, cites the clause by **edition and date**, keeps
+deductible / sub-limit / policy limit as three numbers, and **refers to an adjuster instead of ever saying "covered"** — with an integrated eval, a re-scored error taxonomy, a trajectory eval,
+one trace id across the agent and MCP hops, a closed failure→test loop and a cost / 10× answer.
+
+- **System:** `python -m app.triage` — a hand-built tool loop discovers five tools over MCP from a server in its own process (`lookup_policy`, `coverage_in_force`, `search_wording`, `get_limits`,
+  `refer_to_adjuster`); the host builds the card from the tools' structured results, redacts the notice before the model sees it, checks the model's loss date against the notice, runs the in-force
+  check if the agent skipped it, and scans every system-written string for decision language. `app/versions.py` dates editions and endorsements from the text; the date filter is code, not a prompt.
+- **Integrated suite (38 hand-written cases, truth written first):** **24/38 on the first run → 38/38** after fixing six things the first run found (a repeated referral lost its trace id; a citation's
+  excerpt did not show the cited clause; a section label named the wrong endorsement; wording shown for a cancelled policy; health redaction deleted a triage fact; the injection heuristic missed a system-impersonation).
+- **A number that moved:** wrong-endorsement-version citation rate **22/25 = 88% → 0/25** when the date filter is on (n = 25; 10/10 straddle cases wrong without it; the five cases around 1 Feb 2025: 5/5 red → 5/5 green). Date-filter cost in hit-rate@3 on 16 non-straddling questions: **0 points**; the cost shows only as completeness at a pool of 1×k (2.62 of 3 passages).
+- **Taxonomy (7 modes, 3 created by integration):** `loss_date_misread`, `pii_in_tool_args`, `earlier_event_missed`. **Trajectory:** tool-choice 92.1%; the outcome-minus-trajectory gap went from −28.9 pp (13 cases with a right path and a wrong card) to +7.9 pp.
+- **The judge fails its bar.** Re-targeted at the triage card (the Week 6 criterion has nothing to grade: there is no decision), agreement with hand labels is **78.9% (30/38; CI 63.7–88.9)** — not 85%. Tuning it to 100% on the labelled set cost it 20 points on fresh notices; I rejected the tuned version. The suite's pass/fail rests on 15 deterministic assertions.
+- **Cost:** $0.164 per claim triaged (mean 5.5 model calls; 74.8% of input tokens are a re-sent prefix); a hailstorm week of 18,000 FNOLs ≈ $2,947 and ~214k tokens/min in the busiest minute — 4.9× Week 11's check figure; the provider rate limit breaks first (by elimination) and every claim is a referral, so the adjuster queue is the real constraint.
+- **Open on purpose (4 known-failing cases):** a bare first name leaks; "last flooded on 1 July" is not read; a fire notice gets the flood exclusion; the remaining sub-limit after earlier payments is not tracked. **Weaknesses written before the final run** are in `weaknesses.md`.
+- **Predictions written before, scored after:** see `eval_report.md` §12 (several missed, stated as misses).
+- **Not done:** the fresh-eyes run (no one from another squad ran it; an independent-code client was run instead, and is not the same thing), any real-model run, load testing, motor/household wording, real claim files.
+
+Start here: [`coursework/w12/results.md`](w12/results.md); the report: [`eval_report.md`](w12/eval_report.md).
+
+---
+
 ## Left undone / open items
 
 - **Week 5's own prediction** (a deterministic polarity-consistency check
@@ -343,3 +385,5 @@ Full detail: [`coursework/w10/results.md`](w10/results.md),
   of prediction P8 and of whether a real model uses a newly discovered tool.
 - **Weeks 9-10:** no real MCP host (Claude Code / Desktop) was connected; no A2A was
   implemented; the MCP agent is not exposed through the FastAPI app.
+- **Weeks 11-12:** every model-shaped result is the offline stub; the Week 12 judge does not clear 85%; no squadmate-timed drill (W11) and no fresh-eyes reviewer (W12);
+  see `coursework/w12/eval_report.md` §10 for what the integrated suite does not cover. **Nothing from Weeks 11-12 is committed yet.**

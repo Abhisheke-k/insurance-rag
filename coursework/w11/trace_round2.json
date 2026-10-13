@@ -1,0 +1,105 @@
+{
+  "schema": "trace/1",
+  "trace_id": "e9e868eeb62240538c96570ba72df3b4",
+  "started_at": "2026-10-12T16:54:59+00:00",
+  "duration_ms": 2.563,
+  "feature": "claim_summary",
+  "input_type": "fnol_note",
+  "user": "usr_19a9cf7f",
+  "prompt_versions": [
+    "claim-summary-v2"
+  ],
+  "input": {
+    "redacted": "Claim clm_99616f12. The insured's cloud hosting provider suffered an outage on 03 August 2026, taking the insured's ordering system offline for 36 hours. Insured claims lost sales of GBP 149,033.",
+    "redactions": [
+      "claim_number"
+    ],
+    "chars": 197,
+    "digest": "3e03d4ac2fa55b3b"
+  },
+  "output": {
+    "claim_ref": "clm_99616f12",
+    "decision": "covered",
+    "cited_exclusion_id": null,
+    "excess_amount": null,
+    "citations": [
+      "0e3d055e56b37d0b::0003"
+    ],
+    "summary": "Notes match an insured peril: (c) the failure, malfunction, degradation, unavailability or interruption of any Computer System, whether owned or operated by the Insured or by any third party service provider, cloud host, managed service provider or telecommunications carrier upon which the Insured relies, and whether or not the Insured had a contractual right of recourse against that party;",
+    "notes": [],
+    "suspect": [
+      "covered_quotes_list_item"
+    ]
+  },
+  "context_ids": [
+    "0e3d055e56b37d0b::0006",
+    "0e3d055e56b37d0b::0004",
+    "0e3d055e56b37d0b::0003",
+    "0e3d055e56b37d0b::0001",
+    "0e3d055e56b37d0b::0000"
+  ],
+  "cost": {
+    "usd": 0.021345,
+    "basis": "projected@claude-opus-5",
+    "input_tokens": 3304,
+    "output_tokens": 193,
+    "llm_calls": 1
+  },
+  "tags": {},
+  "error": null,
+  "spans": [
+    {
+      "span_id": "17039adf4ac2188f",
+      "parent_id": "8b607c710eaa456b",
+      "name": "retrieve",
+      "kind": "retrieval",
+      "start_ms": 0.091,
+      "duration_ms": 0.641,
+      "status": "ok",
+      "error": null,
+      "attrs": {
+        "mode": "hybrid_bm25_rrf",
+        "top_k": 5,
+        "query_digest": "3e03d4ac2fa5",
+        "n": 5,
+        "context_ids": [
+          "0e3d055e56b37d0b::0006",
+          "0e3d055e56b37d0b::0004",
+          "0e3d055e56b37d0b::0003",
+          "0e3d055e56b37d0b::0001",
+          "0e3d055e56b37d0b::0000"
+        ],
+        "scores": [
+          0.0325,
+          0.032,
+          0.0318,
+          0.0315,
+          0.031
+        ],
+        "carry_clause_stem": false,
+        "stems_carried": 0
+      }
+    },
+    {
+      "span_id": "3f1cdfe30142b24c",
+      "parent_id": "8b607c710eaa456b",
+      "name": "llm.complete",
+      "kind": "generation",
+      "start_ms": 0.757,
+      "duration_ms": 1.633,
+      "status": "ok",
+      "error": null,
+      "attrs": {
+        "model": "stub:reading-comprehension-v1",
+        "prompt_version": "claim-summary-v2",
+        "input_tokens": 3304,
+        "output_tokens": 193,
+        "tokens_estimated": true,
+        "cost_usd": 0.021345,
+        "cost_basis": "projected@claude-opus-5",
+        "stop_reason": "end",
+        "effort": "medium"
+      }
+    }
+  ]
+}

@@ -20,6 +20,8 @@ data/*.pdf
 .w8-injection/
 .tmp/
 .eval_scratch/
+logs/
+.drill/
 
 # Editors / OS
 .idea/

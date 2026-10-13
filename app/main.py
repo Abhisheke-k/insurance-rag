@@ -7,6 +7,7 @@ Endpoints
 ``POST /summarize-claim``      adjuster notes -> structured, cited claim summary
 ``POST /agent/process-claim``  adjuster notes -> the same, via a multi-step agent (Week 7)
 ``GET  /documents``            what has been ingested, and under which settings
+``GET  /passages/{id}``       the passage a citation links to (``?as_of=`` narrows it to the wording in force that day)
 ``GET  /health``               resolved configuration and store status
 ``GET  /ui``                    the self-contained single-page frontend
 """
@@ -15,6 +16,7 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
+from datetime import date
 from pathlib import Path
 from typing import Annotated, AsyncIterator
 
@@ -235,6 +237,24 @@ def create_app(settings: Settings | None = None, service: RagService | None = No
             count=len(records),
             total_chunks=sum(record.chunks for record in records),
         )
+
+    @app.get("/passages/{chunk_id}", tags=["documents"])
+    def passage(chunk_id: str, service: ServiceDep, as_of: date | None = None) -> dict[str, object]:
+        """The passage a citation points at. With ``?as_of=YYYY-MM-DD`` (the loss date), only the wording in force that day."""
+        found = service.passage(chunk_id, as_of)
+        if found is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, f"unknown passage {chunk_id!r}")
+        chunk, shown = found
+        return {
+            "chunk_id": chunk.chunk_id,
+            "filename": chunk.filename,
+            "page": chunk.page,
+            "section": chunk.section,
+            "as_of": as_of.isoformat() if as_of else None,
+            "in_force_on_as_of": shown is not None,
+            "text": shown.text if shown is not None else "",
+            "versions": [tag.to_dict() for tag in shown.versions] if shown is not None else [],
+        }
 
     @app.delete("/documents/{doc_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["documents"])
     def delete_document(doc_id: str, service: ServiceDep) -> None:

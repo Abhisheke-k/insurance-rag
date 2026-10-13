@@ -1,0 +1,100 @@
+{
+  "schema": "trace/1",
+  "trace_id": "279c193285c04c7b9f93373112f10c55",
+  "started_at": "2026-10-12T10:25:41+00:00",
+  "duration_ms": 3.683,
+  "feature": "claim_summary",
+  "input_type": "fnol_note",
+  "user": "usr_abcd06bf",
+  "prompt_versions": [
+    "claim-summary-v1"
+  ],
+  "input": {
+    "redacted": "Claim clm_51296244. Ransomware incident on 04 March 2026 encrypted the insured's order management system; insured paid a ransom of GBP 304,260 in cryptocurrency to restore access. Insured asks whether the ransom payment is covered.",
+    "redactions": [
+      "claim_number"
+    ],
+    "chars": 233,
+    "digest": "1776ac314c84f917"
+  },
+  "output": {
+    "claim_ref": "clm_51296244",
+    "decision": "covered",
+    "cited_exclusion_id": null,
+    "excess_amount": null,
+    "citations": [
+      "06324be13612e4ea::0004"
+    ],
+    "summary": "Notes match an insured peril: (f) any extortion demand, ransom payment, cryptocurrency transfer or negotiation fee made or incurred in response to a threat to a Computer System or to Data, and including the fees of any incident response firm, ransomware negotiator or public relations consultant engaged in connection with that threat;",
+    "notes": []
+  },
+  "context_ids": [
+    "06324be13612e4ea::0004",
+    "06324be13612e4ea::0001",
+    "06324be13612e4ea::0003",
+    "06324be13612e4ea::0002",
+    "06324be13612e4ea::0006"
+  ],
+  "cost": {
+    "usd": 0.02083,
+    "basis": "projected@claude-opus-5",
+    "input_tokens": 3286,
+    "output_tokens": 176,
+    "llm_calls": 1
+  },
+  "tags": {},
+  "error": null,
+  "spans": [
+    {
+      "span_id": "162e8f645b25f2f3",
+      "parent_id": "e5db0f02d85746c8",
+      "name": "retrieve",
+      "kind": "retrieval",
+      "start_ms": 0.173,
+      "duration_ms": 1.174,
+      "status": "ok",
+      "error": null,
+      "attrs": {
+        "mode": "hybrid_bm25_rrf",
+        "top_k": 5,
+        "query_digest": "1776ac314c84",
+        "n": 5,
+        "context_ids": [
+          "06324be13612e4ea::0004",
+          "06324be13612e4ea::0001",
+          "06324be13612e4ea::0003",
+          "06324be13612e4ea::0002",
+          "06324be13612e4ea::0006"
+        ],
+        "scores": [
+          0.0328,
+          0.0318,
+          0.0315,
+          0.031,
+          0.0308
+        ]
+      }
+    },
+    {
+      "span_id": "ba04a60e91d13ad7",
+      "parent_id": "e5db0f02d85746c8",
+      "name": "llm.complete",
+      "kind": "generation",
+      "start_ms": 1.377,
+      "duration_ms": 2.115,
+      "status": "ok",
+      "error": null,
+      "attrs": {
+        "model": "stub:reading-comprehension-v1",
+        "prompt_version": "claim-summary-v1",
+        "input_tokens": 3286,
+        "output_tokens": 176,
+        "tokens_estimated": true,
+        "cost_usd": 0.02083,
+        "cost_basis": "projected@claude-opus-5",
+        "stop_reason": "end",
+        "effort": "medium"
+      }
+    }
+  ]
+}

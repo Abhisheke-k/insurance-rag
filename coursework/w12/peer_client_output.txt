@@ -1,0 +1,33 @@
+server: claims-desk-policy   tools discovered: ['lookup_policy', 'coverage_in_force', 'search_wording', 'get_limits', 'refer_to_adjuster']
+
+> lookup_policy({"reference": "CLM-2024-00417"})
+  is_error=False
+  { "found": true, "kind": "claim", "claim_number": "CLM-2024-00417", "policy_number": "GML-2024-88213", "product": "commercial-property", "period_start": "2024-04-01", "period_end": "2025-03-31", "cancelled_from": null, "policyholder_ref": "PH-0412", "wording_documents": [ "sample_endorsement_pack.pdf", "form_ho0304_archive.pdf" ], "wording_on_file": true }
+
+> coverage_in_force({"policy_number": "GML-2024-88213", "loss_date": "2024-08-11"})
+  is_error=False
+  { "policy_number": "GML-2024-88213", "loss_date": "2024-08-11", "in_force": true, "reason_code": "in_force", "detail": "within the period 2024-04-01 to 2025-03-31", "period_start": "2024-04-01", "period_end": "2025-03-31", "cancelled_from": null }
+
+> search_wording({"query": "second flood within consecutive days exclusion", "policy_number": "GML-2024-88213", "loss_date": "2024-08-11", "top_k": 2})
+  is_error=False
+  { "passages": [ { "chunk_id": "9e0e286aba2153bc::0001", "doc_id": "9e0e286aba2153bc", "filename": "form_ho0304_archive.pdf", "page": 1, "page_end": 1, "section_path": "FORM HO-0304 - EDITION 01-24", "clause_label": "FORM HO-0304 - EDITION 01-24", "score": 0.3273, "text": "FORM HO-0304 - EDITION 01-24\nEXCLUSION CODE E-17 - SEQUENTIAL WATER INTRUSION EVENTS (EDITION 01-24)\n\nExclusion Code E-17 (Form HO-0304, edition 01-24). This policy does not cover loss or damage arising from a second or subsequent Flood event at the same insured location where that event occurs within 55 consecutive days of an earlier Flood event at the same location, save that this exclusion does not apply to a Flood ev …
+
+> search_wording({"query": "second flood within consecutive days exclusion", "policy_number": "GML-2024-88213", "loss_date": "2025-02-01", "top_k": 2})
+  is_error=False
+  { "passages": [ { "chunk_id": "9e0e286aba2153bc::0000", "doc_id": "9e0e286aba2153bc", "filename": "form_ho0304_archive.pdf", "page": 1, "page_end": 1, "section_path": "FORM LIBRARY - ARCHIVED WORDING ON FILE", "clause_label": "FORM LIBRARY - ARCHIVED WORDING ON FILE", "score": 0.3238, "text": "FORM LIBRARY - ARCHIVED WORDING ON FILE\nThis file retains prior editions of Form HO-0304 for audit and reference purposes against policy GML-2024-88213. The edition currently endorsed to the policy is 03-24 (see the waterdamage endorsement in the main endorsement pack for its reference number). Earlier editions below are retained for reference only and do not apply to a loss occurring after the date t …
+
+> get_limits({"policy_number": "GML-2024-88213", "loss_date": "2024-08-11", "peril": "flood", "in_flood_zone": true})
+  is_error=False
+  { "product": "commercial-property", "loss_date": "2024-08-11", "peril": "flood", "deductible": { "amount": 250000, "currency": "GBP", "basis": "each and every loss", "source": "Endorsement No. 1, clause 3 (DEDUCTIBLE)", "stated": "stated", "effective_from": "2024-06-01", "effective_to": null, "note": "Applies at a location within a Flood Zone (Zone 2 or 3 on the Environment Agency map at the endorsement's inception, clause 1.2).", "candidates": [] }, "sub_limit": { "amount": 5000000, "currency": "GBP", "basis": "annual aggregate", "source": "Endorsement No. 1, clause 2 (AMENDMENT TO LIMIT)", "stated": "stated", "effective_from": "2024-06-01", "effective_to": null, "note": "Annual aggregate a …
+
+> search_wording({"query": "Priya Rao of 14 Station Road, SW1A 1AA (07911 123456) broke her wrist in the flood", "policy_number": "GML-2024-88213", "loss_date": "2024-)
+  is_error=False
+  { "passages": [ { "chunk_id": "31cf16d85318e848::0002", "doc_id": "31cf16d85318e848", "filename": "sample_endorsement_pack.pdf", "page": 1, "page_end": 2, "section_path": "ENDORSEMENT NO. 1 - FLOOD SUB-LIMIT AMENDMENT > SECTION 4 - CONDITIONS APPLYING TO THIS ENDORSEMENT > 4.2 Exclusions > 4.2.1 Erosion of the sub-limit", "clause_label": "4.2.1 Erosion of the sub-limit", "score": 0.0913, "text": "4.2.1 Erosion of the sub-limit\nEach payment made under this endorsement, including any payment for professional fees and debris removal, erodes the annual aggregate sub-limit stated in clause 2. Once the annual aggregate sub-limit is exhausted no further payment shall be made under this endorsement …
+
+> refer_to_adjuster({"claim_number": "CLM-2024-00417", "reason_codes": ["routine_review"], "facts": "This claim is covered and will be paid."})
+  is_error=True
+  Error executing tool refer_to_adjuster: facts may not state a coverage decision (uses the coverage-status word); the adjuster decides. Rewrite as neutral facts.
+
+=== what this client was handed ===
+personal-detail patterns or echoed arguments found in any result: none
+referral the server queued from that call (a note containing the forbidden word was refused, so none): none

@@ -26,7 +26,10 @@ import hashlib
 import hmac
 import json
 import logging
+import secrets
 import time
+from contextvars import ContextVar
+from datetime import datetime, timezone
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
@@ -34,15 +37,25 @@ from typing import Any
 from mcp.shared.exceptions import MCPError
 from mcp_types import INVALID_REQUEST, CallToolResult, TextContent
 
+from app.observability import JsonlSink, parse_traceparent
+
 logger = logging.getLogger(__name__)
 
 __all__ = [
+    "CALL_PRINCIPAL",
+    "CALL_TRACE",
     "LOCAL_PRINCIPAL",
     "AccessPolicy",
     "BearerAuthMiddleware",
     "Principal",
     "ToolScopeMiddleware",
 ]
+
+#: Who is making the tool call that is running, and the (trace id, parent span id) the caller sent in ``_meta.traceparent``.
+#: Set by :class:`ToolScopeMiddleware` for the duration of one call so a tool that writes (``refer_to_adjuster``) can record
+#: both without every handler taking a context argument.
+CALL_PRINCIPAL: ContextVar[str | None] = ContextVar("mcp_call_principal", default=None)
+CALL_TRACE: ContextVar[tuple[str, str] | None] = ContextVar("mcp_call_trace", default=None)
 
 
 @dataclass(frozen=True, slots=True)
@@ -152,11 +165,12 @@ class ToolScopeMiddleware:
     duration, never the arguments (they may carry claim details).
     """
 
-    def __init__(self, policy: AccessPolicy | None, *, transport: str) -> None:
+    def __init__(self, policy: AccessPolicy | None, *, transport: str, trace_sink: JsonlSink | None = None) -> None:
         if transport == "http" and policy is None:
             raise ValueError("the HTTP transport requires an AccessPolicy (refusing to serve unauthenticated)")
         self._policy = policy
         self._transport = transport
+        self._trace_sink = trace_sink
 
     def _principal(self, ctx: Any) -> Principal | None:
         if self._transport == "stdio":
@@ -187,22 +201,49 @@ class ToolScopeMiddleware:
                 # the names of tools outside its scope.
                 return CallToolResult(content=[TextContent(type="text", text=f"Unknown tool: {name}")], is_error=True)
             started = time.perf_counter()
+            started_at = datetime.now(timezone.utc)
             outcome = "error"
+            meta = ctx.meta or {}
+            inherited = parse_traceparent(meta.get("traceparent") if hasattr(meta, "get") else None)
+            tokens = (CALL_PRINCIPAL.set(principal.name), CALL_TRACE.set(inherited))
             try:
                 result = await call_next(ctx)
                 outcome = "tool_error" if _is_error_result(result) else "ok"
                 return result
             finally:
-                logger.info(
-                    "mcp.audit principal=%s tool=%s outcome=%s ms=%.1f",
-                    principal.name,
-                    name,
-                    outcome,
-                    (time.perf_counter() - started) * 1000,
-                )
+                CALL_PRINCIPAL.reset(tokens[0])
+                CALL_TRACE.reset(tokens[1])
+                elapsed_ms = (time.perf_counter() - started) * 1000
+                logger.info("mcp.audit principal=%s tool=%s outcome=%s ms=%.1f", principal.name, name, outcome, elapsed_ms)
+                self._write_span(ctx, name, principal.name, outcome, started_at, elapsed_ms)
 
         result = await call_next(ctx)
         return _filter_tool_listing(result, lambda tool_name: self._visible(principal, tool_name))
+
+
+    def _write_span(self, ctx: Any, tool: str, principal: str, outcome: str, started_at: datetime, ms: float) -> None:
+        """The server's half of a trace: same trace id as the caller's, never the arguments."""
+        if self._trace_sink is None:
+            return
+        meta = ctx.meta or {}
+        inherited = parse_traceparent(meta.get("traceparent") if hasattr(meta, "get") else None)
+        self._trace_sink.write(
+            {
+                "schema": "span/1",
+                "side": "server",
+                "trace_id": inherited[0] if inherited else None,
+                "parent_id": inherited[1] if inherited else None,
+                "span_id": secrets.token_hex(8),
+                "name": f"mcp.tools/call:{tool}",
+                "kind": "tool",
+                "tool": tool,
+                "principal": principal,
+                "started_at": started_at.isoformat(),
+                "duration_ms": round(ms, 3),
+                "status": "ok" if outcome == "ok" else "error",
+                "outcome": outcome,
+            }
+        )
 
 
 def _is_error_result(result: Any) -> bool:

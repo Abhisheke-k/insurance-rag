@@ -1,0 +1,124 @@
+{
+  "_comment": "SYNTHETIC. Invented policies and claims for the Week 12 triage demo. No personal data: a policyholder is an opaque reference. GML-2024-88213 is the policy named in the sample endorsement pack; the others exist so that every branch of the in-force check has an example.",
+  "policies": [
+    {
+      "policy_number": "GML-2024-88213",
+      "product": "commercial-property",
+      "period_start": "2024-04-01",
+      "period_end": "2025-03-31",
+      "policyholder_ref": "PH-0412",
+      "wording_documents": [
+        "sample_endorsement_pack.pdf",
+        "form_ho0304_archive.pdf"
+      ]
+    },
+    {
+      "policy_number": "GML-2024-88214",
+      "product": "commercial-property",
+      "period_start": "2024-04-01",
+      "period_end": "2025-03-31",
+      "policyholder_ref": "PH-0413",
+      "wording_documents": [
+        "sample_endorsement_pack.pdf",
+        "form_ho0304_archive.pdf"
+      ],
+      "cancelled_from": "2024-09-15",
+      "cancellation_reason": "non-payment of premium"
+    },
+    {
+      "policy_number": "GML-2024-90551",
+      "product": "commercial-property",
+      "period_start": "2024-07-01",
+      "period_end": "2025-06-30",
+      "policyholder_ref": "PH-0577",
+      "wording_documents": [
+        "sample_endorsement_pack.pdf",
+        "form_ho0304_archive.pdf"
+      ]
+    },
+    {
+      "policy_number": "GML-2023-61450",
+      "product": "commercial-property",
+      "period_start": "2023-04-01",
+      "period_end": "2024-03-31",
+      "policyholder_ref": "PH-0412",
+      "wording_documents": []
+    },
+    {
+      "policy_number": "GML-2025-10233",
+      "product": "commercial-property",
+      "period_start": "2025-04-01",
+      "period_end": "2026-03-31",
+      "policyholder_ref": "PH-0412",
+      "wording_documents": []
+    },
+    {
+      "policy_number": "GML-2023-55120",
+      "product": "commercial-property",
+      "period_start": "2023-06-01",
+      "period_end": "2024-05-31",
+      "policyholder_ref": "PH-0733",
+      "wording_documents": [
+        "form_ho0304_archive.pdf"
+      ]
+    }
+  ],
+  "claims": [
+    {
+      "claim_number": "CLM-2024-00417",
+      "policy_number": "GML-2024-88213"
+    },
+    {
+      "claim_number": "CLM-2024-00418",
+      "policy_number": "GML-2024-88213"
+    },
+    {
+      "claim_number": "CLM-2024-00502",
+      "policy_number": "GML-2024-88213"
+    },
+    {
+      "claim_number": "CLM-2025-00031",
+      "policy_number": "GML-2024-88213"
+    },
+    {
+      "claim_number": "CLM-2025-00032",
+      "policy_number": "GML-2024-88213"
+    },
+    {
+      "claim_number": "CLM-2024-00611",
+      "policy_number": "GML-2024-88214"
+    },
+    {
+      "claim_number": "CLM-2024-00612",
+      "policy_number": "GML-2024-88214"
+    },
+    {
+      "claim_number": "CLM-2024-00733",
+      "policy_number": "GML-2024-90551"
+    },
+    {
+      "claim_number": "CLM-2024-00101",
+      "policy_number": "GML-2023-61450"
+    },
+    {
+      "claim_number": "CLM-2025-00212",
+      "policy_number": "GML-2025-10233"
+    },
+    {
+      "claim_number": "CLM-2025-00290",
+      "policy_number": "GML-2024-88213"
+    },
+    {
+      "claim_number": "CLM-2023-00880",
+      "policy_number": "GML-2023-55120"
+    },
+    {
+      "claim_number": "CLM-2023-00881",
+      "policy_number": "GML-2023-55120"
+    },
+    {
+      "claim_number": "CLM-2024-00090",
+      "policy_number": "GML-2023-55120"
+    }
+  ]
+}

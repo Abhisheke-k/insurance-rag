@@ -1,0 +1,18 @@
+{
+  "criterion": "FIT (same as labels.json): does the cited wording engage the circumstances the notice describes -- the same peril and clause topic?",
+  "labeled_by": "single rater: the AI assistant that built the system",
+  "labeled_at": "2026-10-13",
+  "ordering": "written after reading heldout_outputs.json and BEFORE the iterated judge (judge-integrated-v2) was run on any of these ten notices. Same principle as labels.json: a clause about a second or subsequent event is engaged only if the notice states an earlier event -- in any phrasing ('again', 'last flooded on 1 July', 'also flooded in January', 'third flood in 90 days'). I know the judge's rules, having written them; the labels follow the criterion, not the rules.",
+  "labels": [
+    {"id": "H01", "fit": true, "reason": "'the second this year, about 45 days after the earlier flood'; cites E-17."},
+    {"id": "H02", "fit": false, "reason": "single flood (river burst its banks), no earlier event; cites E-17. (contested, same principle as S09/L01)"},
+    {"id": "H03", "fit": true, "reason": "'flooded again after the October storms' states an earlier event; cites E-17."},
+    {"id": "H04", "fit": false, "reason": "business-interruption / waiting-period notice; cites the flood sequential-exclusion clause -- wrong clause."},
+    {"id": "H05", "fit": false, "reason": "fire notice; cites the flood sequential-exclusion clause -- wrong peril."},
+    {"id": "H06", "fit": true, "reason": "ransomware notice; cites the cyber exclusion."},
+    {"id": "H07", "fit": true, "reason": "'the site last flooded on 1 July 2024' states an earlier flood; cites E-17."},
+    {"id": "H08", "fit": true, "reason": "'it also flooded in January' states an earlier flood; cites E-17 (Endorsement 4)."},
+    {"id": "H09", "fit": false, "reason": "subsidence / ground heave; cites the flood deductible paragraph. The governing text is clause 4.2(a), which was not cited."},
+    {"id": "H10", "fit": true, "reason": "'the third flood in 90 days' states earlier floods; cites E-17."}
+  ]
+}

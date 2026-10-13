@@ -41,6 +41,15 @@ NOT_FOUND_MESSAGE = "I couldn't find this in the documents."
 
 _SNIPPET_CHARS = 320
 
+#: Explains the "[Clause lead-in]" marker that app/clause_stem.py puts on a continuation passage. Appended to every
+#: prompt that receives retrieved passages, so the retrieval change and the prompt change cannot drift apart.
+CLAUSE_LEAD_IN_NOTE = (
+    'A passage may begin "[Clause lead-in] ..." followed by "[Continued] ...". The lead-in is the opening of the '
+    'clause that passage continues -- for example the words "this policy excludes ... the following:" that govern a '
+    "list of items. Read every item in the continued text under that lead-in: an item under an exclusion lead-in is "
+    "excluded, not covered."
+)
+
 SYSTEM_PROMPT = f"""\
 You answer questions about insurance endorsement documents for an operations team.
 
@@ -65,6 +74,7 @@ what they do and do not establish. Only use the not-found response when the \
 passages are genuinely silent on the question.
 8. If passages conflict (for example an endorsement amending a base clause), say so \
 and cite both.
+9. {CLAUSE_LEAD_IN_NOTE}
 """
 
 #: Structured-output schema. Guarantees the response parses, so the citation

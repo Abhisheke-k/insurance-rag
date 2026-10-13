@@ -8,22 +8,28 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import re
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from collections.abc import Collection
+from datetime import date, datetime, timezone
 from typing import Any, Sequence
 
 from app.agent import AgentClaimResult, ClaimsAgent
 from app.chunking import StructureAwareChunker, build_chunker
+from app.clause_stem import carry_clause_stems
 from app.claims import ClaimSummary, ClaimSummaryGenerator
 from app.config import Settings
 from app.embeddings import Embedder, build_embedder
 from app.generation import AnswerGenerator, not_found_answer
 from app.hybrid_retrieval import BM25Index, hybrid_retrieve
 from app.models import Chunk, DocumentRecord, GeneratedAnswer, RetrievedChunk
+from app.observability import JsonlSink, Tracer, span
 from app.parsing import parse_pdf_bytes
 from app.registry import DocumentRegistry
 from app.store import VectorStore, build_vector_store
+from app.suspicion import suspect_flags
 from app.tokenizer import estimate_tokens
+from app.versions import VersionIndex
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +86,10 @@ class RagService:
         claims_agent: ClaimsAgent | None = None,
     ) -> None:
         self.settings = settings
+        self.tracer = Tracer(
+            JsonlSink(settings.trace_log_path) if settings.trace_log_path else None,
+            price_model=settings.answer_model,
+        )
         self.embedder = embedder or build_embedder(settings)
         self.store = store or build_vector_store(settings)
         self.registry = registry or DocumentRegistry(settings.registry_path)
@@ -89,6 +99,8 @@ class RagService:
         self.claims_agent = claims_agent or ClaimsAgent(settings, searcher=self)
         self._bm25_index: BM25Index | None = None
         self._bm25_dirty = True
+        self._chunk_lookup: dict[tuple[str, int], RetrievedChunk] | None = None
+        self._version_index: VersionIndex | None = None
 
     # ------------------------------------------------------------------ #
     # Ingestion
@@ -138,6 +150,8 @@ class RagService:
         vectors = self.embedder.embed_documents([self._embedding_text(chunk) for chunk in chunks])
         self.store.add_chunks(chunks, vectors)
         self._bm25_dirty = True
+        self._chunk_lookup = None
+        self._version_index = None
 
         record = DocumentRecord(
             doc_id=doc_id,
@@ -187,7 +201,121 @@ class RagService:
         return self._bm25_index
 
     def retrieve(self, question: str, top_k: int | None = None) -> list[RetrievedChunk]:
-        """Return the closest chunks to ``question``, best first.
+        """Return the closest chunks to ``question``, best first -- as a ``retrieval`` span.
+
+        The span records the context ids and scores (never the query text): enough to see
+        exactly which wording an answer was built from without logging what was asked.
+        """
+        k = top_k or self.settings.top_k
+        with span(
+            "retrieve",
+            "retrieval",
+            mode=self.settings.retrieval_mode,
+            top_k=k,
+            query_digest=hashlib.sha256(question.encode("utf-8")).hexdigest()[:12],
+        ) as current:
+            hits = self._retrieve(question, k)
+            carried = 0
+            if self.settings.carry_clause_stem:
+                hits, carried = carry_clause_stems(hits, self._lookup_chunk)
+            if current is not None:
+                current.set(
+                    n=len(hits),
+                    context_ids=[hit.chunk_id for hit in hits],
+                    scores=[round(hit.score, 4) for hit in hits],
+                    carry_clause_stem=self.settings.carry_clause_stem,
+                    stems_carried=carried,
+                )
+            return hits
+
+    def _ensure_version_index(self) -> VersionIndex:
+        if self._version_index is None:
+            self._version_index = VersionIndex.build(self.store.all_chunks())
+        return self._version_index
+
+    def retrieve_as_of(
+        self,
+        question: str,
+        top_k: int | None = None,
+        as_of: date | None = None,
+        documents: Collection[str] | None = None,
+    ) -> list[RetrievedChunk]:
+        """Retrieval that only offers wording in force on ``as_of`` (the loss date) -- the single entry point for coverage questions.
+
+        The date filter is enforced here, in code, not requested in a prompt: a candidate pool of ``VERSION_POOL_FACTOR * k``
+        is fetched, each candidate is narrowed to the part of it in force on the loss date (a chunk holding two editions keeps
+        only one), what is left is tagged with its edition and effective interval, and the best ``k`` are kept. With no loss
+        date, or ``VERSION_FILTER=false``, this is plain :meth:`retrieve`. ``documents`` scopes the search to the files a policy
+        was issued on (filtering the pool *after* retrieval, so a corpus of many policies would need a store-side filter instead).
+        """
+        k = top_k or self.settings.top_k
+        scope = set(documents) if documents is not None else None
+        if as_of is None or not self.settings.version_filter:
+            if scope is None:
+                return self.retrieve(question, k)
+            wide = self.retrieve(question, k * self.settings.version_pool_factor)
+            return [hit for hit in wide if hit.filename in scope][:k]
+        with span(
+            "retrieve",
+            "retrieval",
+            mode=self.settings.retrieval_mode,
+            top_k=k,
+            query_digest=hashlib.sha256(question.encode("utf-8")).hexdigest()[:12],
+            as_of=as_of.isoformat(),
+            version_filter=True,
+        ) as current:
+            pool = self._retrieve(question, k * self.settings.version_pool_factor)
+            carried = 0
+            if self.settings.carry_clause_stem:
+                pool, carried = carry_clause_stems(pool, self._lookup_chunk)
+            index = self._ensure_version_index()
+            kept: list[RetrievedChunk] = []
+            dropped = 0
+            for hit in pool:
+                if scope is not None and hit.filename not in scope:
+                    continue
+                narrowed, _ = index.resolve(hit, as_of)
+                if narrowed is None:
+                    dropped += 1
+                    continue
+                kept.append(narrowed)
+                if len(kept) == k:
+                    break
+            if current is not None:
+                current.set(
+                    n=len(kept),
+                    pool=len(pool),
+                    out_of_force_dropped=dropped,
+                    context_ids=[hit.chunk_id for hit in kept],
+                    scores=[round(hit.score, 4) for hit in kept],
+                    editions=sorted({tag.edition for hit in kept for tag in hit.versions if tag.edition}),
+                    carry_clause_stem=self.settings.carry_clause_stem,
+                    stems_carried=carried,
+                )
+            return kept
+
+    def passage(self, chunk_id: str, as_of: date | None = None) -> tuple[RetrievedChunk, RetrievedChunk | None] | None:
+        """The stored chunk behind a citation, and (given a loss date) the part of it in force that day.
+
+        ``None`` means no such chunk. A chunk that exists but has nothing in force on ``as_of`` returns ``(chunk, None)``:
+        that is the answer to "does this citation support a loss on that date?".
+        """
+        chunk = next((c for c in self.store.all_chunks() if c.chunk_id == chunk_id), None)
+        if chunk is None:
+            return None
+        if as_of is None:
+            return chunk, chunk
+        narrowed, _ = self._ensure_version_index().resolve(chunk, as_of)
+        return chunk, narrowed
+
+    def _lookup_chunk(self, doc_id: str, chunk_index: int) -> RetrievedChunk | None:
+        """The stored chunk at ``(doc_id, chunk_index)`` -- how a continuation finds the chunk before it."""
+        if self._chunk_lookup is None:
+            self._chunk_lookup = {(c.doc_id, c.chunk_index): c for c in self.store.all_chunks()}
+        return self._chunk_lookup.get((doc_id, chunk_index))
+
+    def _retrieve(self, question: str, top_k: int | None = None) -> list[RetrievedChunk]:
+        """The retrieval itself.
 
         Two modes, selected by ``RETRIEVAL_MODE`` (see app/config.py and the
         Week 4 writeup in coursework/w4/): 'dense' is cosine search over the
@@ -217,12 +345,25 @@ class RagService:
     # ------------------------------------------------------------------ #
     # Ask
     # ------------------------------------------------------------------ #
-    def ask(self, question: str, top_k: int | None = None) -> AskOutcome:
+    def ask(
+        self, question: str, top_k: int | None = None, *, user: str | None = None, input_type: str = "policy_question"
+    ) -> AskOutcome:
         """Retrieve, gate on relevance, then generate a cited answer."""
         question = question.strip()
         if not question:
             raise ValueError("question must not be empty")
+        with self.tracer.trace("ask", input_text=question, user=user, input_type=input_type) as active:
+            outcome = self._ask(question, top_k)
+            active.set_output(
+                found=outcome.answer.found,
+                gated=outcome.gated,
+                best_score=None if outcome.best_score is None else round(outcome.best_score, 4),
+                citations=[c.chunk_id for c in outcome.answer.citations],
+                summary=outcome.answer.answer,
+            )
+            return outcome
 
+    def _ask(self, question: str, top_k: int | None) -> AskOutcome:
         retrieved = self.retrieve(question, top_k)
         if not retrieved:
             return AskOutcome(
@@ -233,20 +374,22 @@ class RagService:
             )
 
         best_score = retrieved[0].score
-        if best_score < self.settings.min_relevance:
+        # Hybrid mode's scores are fused ranks, not cosines: the cosine-calibrated floor does not apply to them.
+        floor = self.settings.min_relevance if self.settings.retrieval_mode == "dense" else self.settings.min_relevance_hybrid
+        if best_score < floor:
             # Nothing in the corpus is close enough to be worth an LLM call.
             # Answering here would mean asking the model to reason over noise.
             logger.info(
                 "relevance gate: best score %.3f < %.3f; returning not-found",
                 best_score,
-                self.settings.min_relevance,
+                floor,
             )
             return AskOutcome(
                 answer=not_found_answer(
                     chunks_used=0,
                     notes=[
-                        f"best similarity {best_score:.3f} below MIN_RELEVANCE "
-                        f"{self.settings.min_relevance:.3f}"
+                        f"best similarity {best_score:.3f} below the relevance floor "
+                        f"{floor:.3f} ({self.settings.retrieval_mode})"
                     ],
                 ),
                 retrieved=retrieved,
@@ -260,7 +403,9 @@ class RagService:
     # ------------------------------------------------------------------ #
     # Claim summaries
     # ------------------------------------------------------------------ #
-    def summarize_claim(self, adjuster_notes: str, top_k: int | None = None) -> ClaimSummaryOutcome:
+    def summarize_claim(
+        self, adjuster_notes: str, top_k: int | None = None, *, user: str | None = None, input_type: str = "fnol_note"
+    ) -> ClaimSummaryOutcome:
         """Retrieve policy/endorsement context for ``adjuster_notes`` and summarise coverage.
 
         No relevance gate here, unlike ``ask()``: a claim always deserves a
@@ -272,12 +417,35 @@ class RagService:
         if not adjuster_notes:
             raise ValueError("adjuster notes must not be empty")
 
-        retrieved = self.retrieve(adjuster_notes, top_k)
-        summary = self.claim_generator.summarize(adjuster_notes, retrieved)
-        return ClaimSummaryOutcome(summary=summary, retrieved=retrieved)
+        with self.tracer.trace("claim_summary", input_text=adjuster_notes, user=user, input_type=input_type) as active:
+            retrieved = self.retrieve(adjuster_notes, top_k or self.settings.claim_top_k)
+            summary = self.claim_generator.summarize(adjuster_notes, retrieved)
+            self._record_summary(active, summary)
+            return ClaimSummaryOutcome(summary=summary, retrieved=retrieved)
+
+    def _record_summary(self, active: Any, summary: ClaimSummary) -> None:
+        """Put the fields a complaint can be traced by on the trace's top level."""
+        claim_ref = None
+        if re.fullmatch(r"CLM-\d{4}-\d{5}", summary.claim_number or ""):
+            claim_ref = self.tracer.redactor.pseudonym("claim_number", summary.claim_number)
+        active.set_output(
+            claim_ref=claim_ref,
+            decision=summary.coverage_decision,
+            cited_exclusion_id=summary.cited_exclusion_id,
+            excess_amount=summary.excess_amount,
+            citations=[c.chunk_id for c in summary.citations],
+            summary=summary.summary,
+            notes=summary.notes,
+            suspect=suspect_flags(summary.coverage_decision, summary.summary, [c.chunk_id for c in summary.citations]),
+        )
 
     def process_claim_with_agent(
-        self, adjuster_notes: str, top_k: int | None = None
+        self,
+        adjuster_notes: str,
+        top_k: int | None = None,
+        *,
+        user: str | None = None,
+        input_type: str = "fnol_note",
     ) -> AgentClaimResult:
         """The Week 7 multi-step counterpart to :meth:`summarize_claim`.
 
@@ -285,7 +453,13 @@ class RagService:
         reached by a think/act/observe loop that searches and self-checks
         rather than one retrieve-then-generate call. See :mod:`app.agent`.
         """
-        return self.claims_agent.process(adjuster_notes, top_k)
+        if not adjuster_notes.strip():
+            return self.claims_agent.process(adjuster_notes, top_k)  # raises the agent's own ValueError
+        with self.tracer.trace("claims_agent", input_text=adjuster_notes, user=user, input_type=input_type) as active:
+            result = self.claims_agent.process(adjuster_notes, top_k)
+            self._record_summary(active, result.summary)
+            active.set_output(stopped_reason=result.stopped_reason, steps=[step.action for step in result.steps])
+            return result
 
     # ------------------------------------------------------------------ #
     # Documents / health
@@ -296,6 +470,8 @@ class RagService:
     def delete_document(self, doc_id: str) -> bool:
         self.store.delete_document(doc_id)
         self._bm25_dirty = True
+        self._chunk_lookup = None
+        self._version_index = None
         return self.registry.remove(doc_id)
 
     def health(self) -> dict[str, Any]:
@@ -318,6 +494,7 @@ class RagService:
             "retrieval": {
                 "top_k": self.settings.top_k,
                 "min_relevance": self.settings.min_relevance,
+                "min_relevance_hybrid": self.settings.min_relevance_hybrid,
                 "mode": self.settings.retrieval_mode,
                 "rrf_k": self.settings.rrf_k if self.settings.retrieval_mode == "hybrid_bm25_rrf" else None,
                 "mmr_lambda": self.settings.mmr_lambda,
